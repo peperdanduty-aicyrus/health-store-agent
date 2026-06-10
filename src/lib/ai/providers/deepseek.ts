@@ -6,7 +6,7 @@ type DeepSeekInput = {
 
 export function generateWithDeepSeek({ prompt }: DeepSeekInput) {
   return generateWithOpenAiCompatibleProvider({
-    model: process.env.AI_MODEL || "deepseek-v4-flash",
+    model: "deepseek-v4-flash",
     prompt,
     provider: "deepseek",
   });

@@ -40,7 +40,7 @@
 - TypeScript
 - Tailwind CSS
 - Supabase 设计表结构，开发阶段先用本地 mock 数据跑通流程
-- AI provider 适配层，开发阶段使用 mock provider，拿到 Qwen API 后接入 Qwen
+- AI provider 适配层，开发阶段使用 mock provider，真实生成阶段只接入 DeepSeek `deepseek-v4-flash`
 
 环境变量预留：
 
@@ -52,13 +52,13 @@ AI_BASE_URL=
 NEXT_PUBLIC_SITE_URL=http://localhost:3000
 ```
 
-后续 Qwen 切换示例：
+后续 DeepSeek 切换示例：
 
 ```env
-AI_PROVIDER=qwen
-AI_MODEL=qwen-plus
+AI_PROVIDER=deepseek
+AI_MODEL=deepseek-v4-flash
 AI_API_KEY=xxx
-AI_BASE_URL=https://dashscope.aliyuncs.com/compatible-mode/v1
+AI_BASE_URL=https://api.deepseek.com
 ```
 
 ## 信息架构

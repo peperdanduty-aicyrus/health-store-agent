@@ -2,7 +2,7 @@
 
 > **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
 
-**Goal:** Build an independent Next.js MVP for the local health-store acquisition assistant, with mock AI generation first and Qwen integration reserved for later.
+**Goal:** Build an independent Next.js MVP for the local health-store acquisition assistant, with mock AI generation first and DeepSeek `deepseek-v4-flash` integration reserved for real generation.
 
 **Architecture:** Use a Next.js App Router project with small domain modules for plans, auth, generation scenes, sensitive-word scanning, and AI providers. The first implementation keeps data in local seed-backed stores so the UI and permission flows can be verified before connecting Supabase and Qwen.
 
@@ -92,7 +92,7 @@
 - [ ] Implement `generateContent({ userId, scene, storeProfile, input })`.
 - [ ] Make `AI_PROVIDER=mock` return structured sample outputs for all six scenes.
 - [ ] Add OpenAI-compatible provider shell that reads `AI_API_KEY`, `AI_BASE_URL`, and `AI_MODEL`.
-- [ ] Do not require Qwen API for local build.
+- [ ] Do not require DeepSeek API for local build.
 
 ## Task 6: Build Public Pages
 
