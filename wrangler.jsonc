@@ -1,0 +1,19 @@
+{
+  "$schema": "./node_modules/wrangler/config-schema.json",
+  "name": "health-store-agent",
+  "main": ".open-next/worker.js",
+  "compatibility_date": "2026-06-10",
+  "compatibility_flags": ["nodejs_compat"],
+  "observability": {
+    "enabled": true
+  },
+  "assets": {
+    "directory": ".open-next/assets",
+    "binding": "ASSETS"
+  },
+  "vars": {
+    "AI_PROVIDER": "deepseek",
+    "AI_MODEL": "deepseek-v4-flash",
+    "AI_BASE_URL": "https://api.deepseek.com"
+  }
+}
