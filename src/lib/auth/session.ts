@@ -1,0 +1,37 @@
+import { cookies } from "next/headers";
+import { redirect } from "next/navigation";
+import { mockStore } from "../data/store";
+import type { Profile } from "../data/types";
+
+export const sessionCookieName = "hsa_session";
+
+export async function getCurrentProfile(): Promise<Profile | null> {
+  const cookieStore = await cookies();
+  const userId = cookieStore.get(sessionCookieName)?.value;
+
+  if (!userId) {
+    return null;
+  }
+
+  return mockStore.getUserById(userId);
+}
+
+export async function requireUser(): Promise<Profile> {
+  const profile = await getCurrentProfile();
+
+  if (!profile || profile.role !== "user") {
+    redirect("/login");
+  }
+
+  return profile;
+}
+
+export async function requireAdmin(): Promise<Profile> {
+  const profile = await getCurrentProfile();
+
+  if (!profile || profile.role !== "admin") {
+    redirect("/cyrus");
+  }
+
+  return profile;
+}

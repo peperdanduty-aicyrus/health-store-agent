@@ -76,6 +76,10 @@ export function createMockStore(initialState?: Partial<StoreState>) {
       return [...state.profiles];
     },
 
+    getUserById(id: string): Profile | null {
+      return state.profiles.find((profile) => profile.id === id) ?? null;
+    },
+
     login(phone: string, password: string): Profile | null {
       return state.profiles.find((profile) => profile.phone === phone && profile.password === password) ?? null;
     },
