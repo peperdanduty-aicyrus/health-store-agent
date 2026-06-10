@@ -1,24 +1,24 @@
-import { seedGenerations, seedProfiles, seedTrialApplications } from "./seed";
+import { seedGenerations, seedProfiles, seedOpeningApplications } from "./seed";
 import type {
   CreateGenerationInput,
-  CreateTrialApplicationInput,
+  CreateOpeningApplicationInput,
   CreateUserInput,
   GenerationFilter,
   GenerationRecord,
   Profile,
-  TrialApplication,
-  TrialApplicationStatus,
+  OpeningApplication,
+  OpeningApplicationStatus,
 } from "./types";
 
 type StoreState = {
-  applications: TrialApplication[];
+  applications: OpeningApplication[];
   generations: GenerationRecord[];
   profiles: Profile[];
 };
 
 export function createMockStore(initialState?: Partial<StoreState>) {
   const state: StoreState = {
-    applications: clone(initialState?.applications ?? seedTrialApplications),
+    applications: clone(initialState?.applications ?? seedOpeningApplications),
     generations: clone(initialState?.generations ?? seedGenerations),
     profiles: clone(initialState?.profiles ?? seedProfiles),
   };
@@ -34,8 +34,8 @@ export function createMockStore(initialState?: Partial<StoreState>) {
       return record;
     },
 
-    createTrialApplication(input: CreateTrialApplicationInput): TrialApplication {
-      const application: TrialApplication = {
+    createOpeningApplication(input: CreateOpeningApplicationInput): OpeningApplication {
+      const application: OpeningApplication = {
         ...input,
         id: makeId("application", state.applications.length + 1),
         status: "new",
@@ -57,7 +57,7 @@ export function createMockStore(initialState?: Partial<StoreState>) {
       return user;
     },
 
-    listApplications(): TrialApplication[] {
+    listApplications(): OpeningApplication[] {
       return [...state.applications];
     },
 
@@ -102,7 +102,7 @@ export function createMockStore(initialState?: Partial<StoreState>) {
       return record;
     },
 
-    updateTrialApplicationStatus(id: string, status: TrialApplicationStatus): TrialApplication | null {
+    updateOpeningApplicationStatus(id: string, status: OpeningApplicationStatus): OpeningApplication | null {
       const application = state.applications.find((item) => item.id === id);
       if (!application) {
         return null;

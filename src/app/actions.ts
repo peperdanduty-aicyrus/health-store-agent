@@ -12,7 +12,7 @@ import { canGenerate } from "@/lib/domain/permissions";
 import type { SceneKey } from "@/lib/domain/scenes";
 import { scanSensitiveWords } from "@/lib/safety/sensitive-words";
 
-export type TrialApplicationFormState = {
+export type OpeningApplicationFormState = {
   message: string;
   success: boolean;
 };
@@ -36,10 +36,10 @@ export type CreateMerchantFormState = {
 
 const requiredFields = ["storeName", "storeType", "cityArea", "contactName", "phone"];
 
-export async function submitTrialApplication(
-  _previousState: TrialApplicationFormState,
+export async function submitOpeningApplication(
+  _previousState: OpeningApplicationFormState,
   formData: FormData,
-): Promise<TrialApplicationFormState> {
+): Promise<OpeningApplicationFormState> {
   const values = Object.fromEntries(formData.entries());
 
   for (const field of requiredFields) {
@@ -52,7 +52,7 @@ export async function submitTrialApplication(
   }
 
   const store = await getDataStore();
-  await store.createTrialApplication({
+  await store.createOpeningApplication({
     cityArea: String(values.cityArea),
     contactName: String(values.contactName),
     interestedFeatures: String(values.interestedFeatures || ""),

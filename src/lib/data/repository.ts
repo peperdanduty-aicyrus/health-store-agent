@@ -2,30 +2,30 @@ import { mockStore } from "./store";
 import { createD1Store, type D1DatabaseLike } from "./store-d1";
 import type {
   CreateGenerationInput,
-  CreateTrialApplicationInput,
+  CreateOpeningApplicationInput,
   CreateUserInput,
   GenerationFilter,
   GenerationRecord,
   Profile,
-  TrialApplication,
-  TrialApplicationStatus,
+  OpeningApplication,
+  OpeningApplicationStatus,
 } from "./types";
 
 export type DataStore = {
   createGeneration(input: CreateGenerationInput): Promise<GenerationRecord> | GenerationRecord;
-  createTrialApplication(input: CreateTrialApplicationInput): Promise<TrialApplication> | TrialApplication;
+  createOpeningApplication(input: CreateOpeningApplicationInput): Promise<OpeningApplication> | OpeningApplication;
   createUser(input: CreateUserInput): Promise<Profile> | Profile;
   getUserById(id: string): Promise<Profile | null> | Profile | null;
-  listApplications(): Promise<TrialApplication[]> | TrialApplication[];
+  listApplications(): Promise<OpeningApplication[]> | OpeningApplication[];
   listGenerations(filter?: GenerationFilter): Promise<GenerationRecord[]> | GenerationRecord[];
   listUsers(): Promise<Profile[]> | Profile[];
   login(phone: string, password: string): Promise<Profile | null> | Profile | null;
   markGenerationCopied(id: string): Promise<GenerationRecord | null> | GenerationRecord | null;
   updateGenerationNote(id: string, userNote: string): Promise<GenerationRecord | null> | GenerationRecord | null;
-  updateTrialApplicationStatus(
+  updateOpeningApplicationStatus(
     id: string,
-    status: TrialApplicationStatus,
-  ): Promise<TrialApplication | null> | TrialApplication | null;
+    status: OpeningApplicationStatus,
+  ): Promise<OpeningApplication | null> | OpeningApplication | null;
 };
 
 let d1StorePromise: Promise<DataStore> | null = null;

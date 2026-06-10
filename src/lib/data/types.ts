@@ -24,9 +24,9 @@ export type Profile = {
 
 export type CreateUserInput = Omit<Profile, "id" | "createdAt" | "updatedAt">;
 
-export type TrialApplicationStatus = "new" | "contacted" | "opened";
+export type OpeningApplicationStatus = "new" | "contacted" | "opened";
 
-export type TrialApplication = {
+export type OpeningApplication = {
   id: string;
   storeName: string;
   storeType: string;
@@ -36,12 +36,12 @@ export type TrialApplication = {
   wechatId: string;
   interestedFeatures: string;
   note: string;
-  status: TrialApplicationStatus;
+  status: OpeningApplicationStatus;
   createdAt: string;
   updatedAt: string;
 };
 
-export type CreateTrialApplicationInput = Omit<TrialApplication, "id" | "status" | "createdAt" | "updatedAt">;
+export type CreateOpeningApplicationInput = Omit<OpeningApplication, "id" | "status" | "createdAt" | "updatedAt">;
 
 export type GenerationRecord = {
   id: string;

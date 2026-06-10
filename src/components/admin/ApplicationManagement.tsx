@@ -1,6 +1,6 @@
-import type { TrialApplication } from "@/lib/data/types";
+import type { OpeningApplication } from "@/lib/data/types";
 
-export function ApplicationManagement({ applications }: { applications: TrialApplication[] }) {
+export function ApplicationManagement({ applications }: { applications: OpeningApplication[] }) {
   return (
     <section>
       <h2 className="text-2xl font-semibold text-ink">开通申请</h2>

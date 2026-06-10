@@ -22,7 +22,7 @@ describe("AI provider layer", () => {
       provider: "mock",
       scene: "xiaohongshu",
       storeProfile,
-      userId: "user_trial_001",
+      userId: "user_standard_001",
     });
 
     expect(result.provider).toBe("mock");

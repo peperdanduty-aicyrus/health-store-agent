@@ -1,13 +1,13 @@
 import { seedProfiles } from "./seed";
 import type {
   CreateGenerationInput,
-  CreateTrialApplicationInput,
+  CreateOpeningApplicationInput,
   CreateUserInput,
   GenerationFilter,
   GenerationRecord,
   Profile,
-  TrialApplication,
-  TrialApplicationStatus,
+  OpeningApplication,
+  OpeningApplicationStatus,
 } from "./types";
 
 export type D1DatabaseLike = {
@@ -22,7 +22,7 @@ type D1PreparedStatementLike = {
 };
 
 type ProfileRow = Omit<Profile, "disabled"> & { disabled: number };
-type ApplicationRow = TrialApplication;
+type ApplicationRow = OpeningApplication;
 type GenerationRow = Omit<GenerationRecord, "copied"> & { copied: number };
 
 export async function createD1Store(db: D1DatabaseLike) {
@@ -71,9 +71,9 @@ export async function createD1Store(db: D1DatabaseLike) {
       return record;
     },
 
-    async createTrialApplication(input: CreateTrialApplicationInput): Promise<TrialApplication> {
+    async createOpeningApplication(input: CreateOpeningApplicationInput): Promise<OpeningApplication> {
       const now = new Date().toISOString();
-      const application: TrialApplication = {
+      const application: OpeningApplication = {
         ...input,
         id: makeId("application"),
         status: "new",
@@ -125,7 +125,7 @@ export async function createD1Store(db: D1DatabaseLike) {
       return row ? mapProfile(row) : null;
     },
 
-    async listApplications(): Promise<TrialApplication[]> {
+    async listApplications(): Promise<OpeningApplication[]> {
       const { results = [] } = await db
         .prepare("SELECT * FROM applications ORDER BY createdAt DESC")
         .all<ApplicationRow>();
@@ -185,7 +185,7 @@ export async function createD1Store(db: D1DatabaseLike) {
       return getGenerationById(db, id);
     },
 
-    async updateTrialApplicationStatus(id: string, status: TrialApplicationStatus): Promise<TrialApplication | null> {
+    async updateOpeningApplicationStatus(id: string, status: OpeningApplicationStatus): Promise<OpeningApplication | null> {
       await db
         .prepare("UPDATE applications SET status = ?, updatedAt = ? WHERE id = ?")
         .bind(status, new Date().toISOString(), id)

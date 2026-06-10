@@ -2,7 +2,7 @@ import { describe, expect, it } from "vitest";
 import { createMockStore } from "./store";
 
 describe("mock data store", () => {
-  it("logs in the seeded admin account without exposing trial customer seeds", () => {
+  it("logs in the seeded admin account without exposing old sample customer seeds", () => {
     const store = createMockStore();
 
     expect(store.login("13800000000", "admin123")).toMatchObject({
@@ -10,7 +10,7 @@ describe("mock data store", () => {
       phone: "13800000000",
     });
     expect(store.listUsers().filter((user) => user.role === "user")).toHaveLength(0);
-    expect(store.login("13900000001", "trial123")).toBeNull();
+    expect(store.login("13900000001", "sample123")).toBeNull();
   });
 
   it("creates users with store profile and membership settings", () => {
@@ -22,7 +22,7 @@ describe("mock data store", () => {
       expiresAt: "2026-07-10",
       mainProjects: "洁牙、儿童涂氟",
       memberStatus: "paid",
-      password: "demo123",
+      password: "initial123",
       phone: "13911112222",
       planName: "standard_monthly",
       role: "user",
@@ -33,7 +33,7 @@ describe("mock data store", () => {
 
     expect(user.id).toMatch(/^user_/);
     expect(store.listUsers()).toContainEqual(user);
-    expect(store.login("13911112222", "demo123")).toMatchObject({
+    expect(store.login("13911112222", "initial123")).toMatchObject({
       phone: "13911112222",
       role: "user",
       planName: "standard_monthly",
@@ -42,7 +42,7 @@ describe("mock data store", () => {
 
   it("records formal opening applications and status changes", () => {
     const store = createMockStore();
-    const application = store.createTrialApplication({
+    const application = store.createOpeningApplication({
       cityArea: "北京朝阳",
       contactName: "王店长",
       interestedFeatures: "小红书文案、私域成交话术",
@@ -50,11 +50,11 @@ describe("mock data store", () => {
       phone: "13922223333",
       storeName: "同世堂中医馆",
       storeType: "中医馆 / 中医诊所",
-      wechatId: "wang-demo",
+      wechatId: "wang-account",
     });
 
     expect(application.status).toBe("new");
-    expect(store.updateTrialApplicationStatus(application.id, "contacted")).toMatchObject({
+    expect(store.updateOpeningApplicationStatus(application.id, "contacted")).toMatchObject({
       id: application.id,
       status: "contacted",
     });
@@ -69,7 +69,7 @@ describe("mock data store", () => {
       expiresAt: "2026-07-10",
       mainProjects: "洁牙、儿童涂氟",
       memberStatus: "paid",
-      password: "demo123",
+      password: "initial123",
       phone: "13911112222",
       planName: "standard_monthly",
       role: "user",

@@ -1,7 +1,7 @@
 import Link from "next/link";
 import { ArrowRight, CheckCircle2, Sparkles } from "lucide-react";
 import { WechatQrPanel } from "@/components/WechatQrPanel";
-import { TrialForm } from "@/components/public/TrialForm";
+import { OpeningApplicationForm } from "@/components/public/OpeningApplicationForm";
 
 const storeTypes = [
   "中医馆 / 中医诊所",
@@ -46,7 +46,7 @@ export default function Home() {
           <div className="mt-7 flex flex-col gap-3 sm:flex-row">
             <Link
               className="inline-flex min-h-12 items-center justify-center gap-2 rounded-md bg-coral px-5 py-3 font-medium text-white shadow-soft"
-              href="#trial"
+              href="#apply"
             >
               咨询开通
               <ArrowRight className="h-4 w-4" />
@@ -123,9 +123,9 @@ export default function Home() {
         </div>
       </section>
 
-      <section className="mx-auto max-w-6xl px-5 py-10 sm:px-8" id="trial">
+      <section className="mx-auto max-w-6xl px-5 py-10 sm:px-8" id="apply">
         <div className="grid gap-6 lg:grid-cols-[1fr_280px]">
-          <TrialForm />
+          <OpeningApplicationForm />
           <WechatQrPanel mode="inline" />
         </div>
       </section>

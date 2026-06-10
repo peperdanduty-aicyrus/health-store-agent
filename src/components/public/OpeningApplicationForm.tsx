@@ -1,9 +1,9 @@
 "use client";
 
 import { useActionState } from "react";
-import { submitTrialApplication, type TrialApplicationFormState } from "@/app/actions";
+import { submitOpeningApplication, type OpeningApplicationFormState } from "@/app/actions";
 
-const initialState: TrialApplicationFormState = {
+const initialState: OpeningApplicationFormState = {
   message: "",
   success: false,
 };
@@ -17,8 +17,8 @@ const storeTypes = [
   "宠物医院",
 ];
 
-export function TrialForm() {
-  const [state, action, pending] = useActionState(submitTrialApplication, initialState);
+export function OpeningApplicationForm() {
+  const [state, action, pending] = useActionState(submitOpeningApplication, initialState);
 
   return (
     <form action={action} className="rounded-lg border border-ink/10 bg-white p-5 shadow-sm">

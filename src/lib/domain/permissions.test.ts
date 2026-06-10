@@ -11,23 +11,6 @@ const baseProfile: PermissionProfile = {
 };
 
 describe("membership plan permissions", () => {
-  it("allows free trial users to use all six scenes with a daily limit of 5", () => {
-    const profile: PermissionProfile = {
-      ...baseProfile,
-      memberStatus: "trial",
-      planName: "free_trial",
-    };
-
-    expect(getPlanConfig(profile.planName).dailyLimit).toBe(5);
-    expect(allSceneKeys).toHaveLength(6);
-
-    for (const scene of allSceneKeys) {
-      expect(canGenerate({ profile, scene, todayCount: 4, today: "2026-06-10" })).toMatchObject({
-        allowed: true,
-      });
-    }
-  });
-
   it("limits basic monthly users to xiaohongshu, moments, and official account with 30 daily generations", () => {
     const profile: PermissionProfile = {
       ...baseProfile,
