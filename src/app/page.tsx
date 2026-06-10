@@ -1,6 +1,7 @@
-import Image from "next/image";
 import Link from "next/link";
-import { ArrowRight, CheckCircle2, LockKeyhole, Sparkles } from "lucide-react";
+import { ArrowRight, CheckCircle2, Sparkles } from "lucide-react";
+import { WechatQrPanel } from "@/components/WechatQrPanel";
+import { TrialForm } from "@/components/public/TrialForm";
 
 const storeTypes = [
   "中医馆 / 中医诊所",
@@ -59,35 +60,7 @@ export default function Home() {
           </div>
         </div>
 
-        <aside className="w-full rounded-lg border border-ink/10 bg-white p-5 shadow-soft lg:max-w-xs">
-          <div className="flex items-start gap-3">
-            <div className="rounded-md bg-moss/10 p-2 text-moss">
-              <LockKeyhole className="h-5 w-5" />
-            </div>
-            <div>
-              <h2 className="text-lg font-semibold">人工开通体验权限</h2>
-              <p className="mt-1 text-sm leading-6 text-ink/65">
-                第一版不开放自助注册和自动支付，提交申请后添加微信沟通。
-              </p>
-            </div>
-          </div>
-          <div className="mt-5 flex items-center gap-4 rounded-md border border-ink/10 bg-paper p-3">
-            <Image
-              src="/images/wechat-qr.png"
-              alt="个人微信二维码"
-              width={112}
-              height={112}
-              className="h-28 w-28 shrink-0 rounded"
-              priority
-            />
-            <p className="text-sm leading-6 text-ink/70">
-              扫码添加微信，备注门店类型，人工确认试用权限。
-            </p>
-          </div>
-          <p className="mt-4 text-sm font-medium text-ink">
-            添加微信，人工开通体验权限。
-          </p>
-        </aside>
+        <WechatQrPanel />
       </section>
 
       <section className="border-y border-ink/10 bg-white">
@@ -146,41 +119,8 @@ export default function Home() {
 
       <section className="mx-auto max-w-6xl px-5 py-10 sm:px-8" id="trial">
         <div className="grid gap-6 lg:grid-cols-[1fr_280px]">
-          <div className="rounded-lg border border-ink/10 bg-white p-5 shadow-sm">
-            <p className="text-sm font-semibold text-coral">试用申请</p>
-            <h2 className="mt-2 text-2xl font-semibold text-ink">提交门店信息后人工开通</h2>
-            <div className="mt-5 grid gap-3 sm:grid-cols-2">
-              {["门店名称", "门店类型", "城市 / 区域", "联系人", "手机号", "微信号"].map((label) => (
-                <label key={label} className="text-sm font-medium text-ink/75">
-                  {label}
-                  <input
-                    className="mt-2 min-h-11 w-full rounded-md border border-ink/12 bg-paper px-3 outline-none focus:border-moss"
-                    placeholder={label}
-                  />
-                </label>
-              ))}
-            </div>
-            <button className="mt-5 inline-flex min-h-12 w-full items-center justify-center rounded-md bg-ink px-5 py-3 font-medium text-white sm:w-auto">
-              申请 3 天免费试用
-            </button>
-          </div>
-          <div className="rounded-lg border border-ink/10 bg-white p-5">
-            <div className="mx-auto w-36 rounded-md border border-ink/10 bg-paper p-2">
-              <Image
-                src="/images/wechat-qr.png"
-                alt="个人微信二维码"
-                width={128}
-                height={128}
-                className="h-32 w-32 rounded"
-              />
-            </div>
-            <p className="mt-4 text-center text-sm font-medium text-ink">
-              添加微信，人工开通体验权限。
-            </p>
-            <p className="mt-2 text-center text-xs leading-5 text-ink/58">
-              提交申请后再添加即可，不做自动付款。
-            </p>
-          </div>
+          <TrialForm />
+          <WechatQrPanel mode="inline" />
         </div>
       </section>
     </main>
