@@ -1,0 +1,34 @@
+import Link from "next/link";
+import type { ReactNode } from "react";
+import type { Profile } from "@/lib/data/types";
+
+const navItems = [
+  { href: "/cyrus", label: "概览" },
+  { href: "/cyrus/users", label: "用户" },
+  { href: "/cyrus/applications", label: "申请" },
+  { href: "/cyrus/generations", label: "记录" },
+];
+
+export function AdminShell({ children, profile }: { children: ReactNode; profile: Profile }) {
+  return (
+    <main className="min-h-screen bg-paper">
+      <header className="border-b border-ink/10 bg-ink text-white">
+        <div className="mx-auto flex max-w-6xl flex-col gap-3 px-5 py-4 sm:flex-row sm:items-center sm:justify-between sm:px-8">
+          <div>
+            <p className="text-sm text-white/58">{profile.phone}</p>
+            <h1 className="text-xl font-semibold">Cyrus 管理后台</h1>
+          </div>
+          <nav className="flex flex-wrap gap-2">
+            {navItems.map((item) => (
+              <Link key={item.href} className="rounded-md bg-white/10 px-3 py-2 text-sm font-medium" href={item.href}>
+                {item.label}
+              </Link>
+            ))}
+          </nav>
+        </div>
+      </header>
+      <div className="mx-auto max-w-6xl px-5 py-6 sm:px-8">{children}</div>
+    </main>
+  );
+}
+
