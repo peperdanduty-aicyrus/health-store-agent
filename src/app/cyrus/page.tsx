@@ -2,7 +2,7 @@ import { AdminDashboard } from "@/components/admin/AdminDashboard";
 import { AdminShell } from "@/components/admin/AdminShell";
 import { LoginForm } from "@/components/customer/LoginForm";
 import { getCurrentProfile } from "@/lib/auth/session";
-import { mockStore } from "@/lib/data/store";
+import { getDataStore } from "@/lib/data/repository";
 
 export default async function CyrusPage() {
   const profile = await getCurrentProfile();
@@ -18,10 +18,11 @@ export default async function CyrusPage() {
     );
   }
 
+  const store = await getDataStore();
+
   return (
     <AdminShell profile={profile}>
-      <AdminDashboard generations={mockStore.listGenerations()} users={mockStore.listUsers()} />
+      <AdminDashboard generations={await store.listGenerations()} users={await store.listUsers()} />
     </AdminShell>
   );
 }
-

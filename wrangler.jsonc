@@ -11,6 +11,13 @@
     "directory": ".open-next/assets",
     "binding": "ASSETS"
   },
+  "d1_databases": [
+    {
+      "binding": "DB",
+      "database_name": "health-store-agent-db",
+      "database_id": "eead25a5-88b9-48a8-af6e-8b94c612f9a0"
+    }
+  ],
   "vars": {
     "AI_PROVIDER": "deepseek",
     "AI_MODEL": "deepseek-v4-flash",

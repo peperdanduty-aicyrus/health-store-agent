@@ -1,6 +1,6 @@
 import { cookies } from "next/headers";
 import { redirect } from "next/navigation";
-import { mockStore } from "../data/store";
+import { getDataStore } from "../data/repository";
 import type { Profile } from "../data/types";
 
 export const sessionCookieName = "hsa_session";
@@ -13,7 +13,8 @@ export async function getCurrentProfile(): Promise<Profile | null> {
     return null;
   }
 
-  return mockStore.getUserById(userId);
+  const store = await getDataStore();
+  return store.getUserById(userId);
 }
 
 export async function requireUser(): Promise<Profile> {

@@ -1,11 +1,12 @@
 import { CustomerShell } from "@/components/customer/CustomerShell";
 import { HistoryList } from "@/components/customer/HistoryList";
 import { requireUser } from "@/lib/auth/session";
-import { mockStore } from "@/lib/data/store";
+import { getDataStore } from "@/lib/data/repository";
 
 export default async function HistoryPage() {
   const profile = await requireUser();
-  const records = mockStore.listGenerations({ userId: profile.id });
+  const store = await getDataStore();
+  const records = await store.listGenerations({ userId: profile.id });
 
   return (
     <CustomerShell profile={profile}>
@@ -14,4 +15,3 @@ export default async function HistoryPage() {
     </CustomerShell>
   );
 }
-

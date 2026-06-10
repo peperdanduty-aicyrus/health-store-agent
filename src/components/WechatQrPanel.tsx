@@ -18,8 +18,8 @@ export function WechatQrPanel({ mode = "card" }: WechatQrPanelProps) {
             className="h-32 w-32 rounded"
           />
         </div>
-        <p className="mt-4 text-center text-sm font-medium text-ink">添加微信，人工开通体验权限。</p>
-        <p className="mt-2 text-center text-xs leading-5 text-ink/58">提交申请后再添加即可，不做自动付款。</p>
+        <p className="mt-4 text-center text-sm font-medium text-ink">添加微信，确认开通方案。</p>
+        <p className="mt-2 text-center text-xs leading-5 text-ink/58">提交信息后再添加即可，不做自动付款。</p>
       </div>
     );
   }
@@ -31,8 +31,8 @@ export function WechatQrPanel({ mode = "card" }: WechatQrPanelProps) {
           <LockKeyhole className="h-5 w-5" />
         </div>
         <div>
-          <h2 className="text-lg font-semibold">人工开通体验权限</h2>
-          <p className="mt-1 text-sm leading-6 text-ink/65">第一版不开放自助注册和自动支付，提交申请后添加微信沟通。</p>
+          <h2 className="text-lg font-semibold">人工开通正式账号</h2>
+          <p className="mt-1 text-sm leading-6 text-ink/65">不开放自助注册和自动支付，提交信息后添加微信确认开通。</p>
         </div>
       </div>
       <div className="mt-5 flex items-center gap-4 rounded-md border border-ink/10 bg-paper p-3">
@@ -44,10 +44,9 @@ export function WechatQrPanel({ mode = "card" }: WechatQrPanelProps) {
           className="h-28 w-28 shrink-0 rounded"
           priority
         />
-        <p className="text-sm leading-6 text-ink/70">扫码添加微信，备注门店类型，人工确认试用权限。</p>
+        <p className="text-sm leading-6 text-ink/70">扫码添加微信，备注门店类型，人工确认套餐和开通时间。</p>
       </div>
-      <p className="mt-4 text-sm font-medium text-ink">添加微信，人工开通体验权限。</p>
+      <p className="mt-4 text-sm font-medium text-ink">添加微信，人工开通正式账号。</p>
     </aside>
   );
 }
-

@@ -22,7 +22,7 @@ const basicScenes: SceneKey[] = ["xiaohongshu", "moments", "official_account"];
 const planConfigs: Record<PlanName, PlanConfig> = {
   free_trial: {
     name: "free_trial",
-    label: "免费试用",
+    label: "临时开通",
     dailyLimit: 5,
     allowedScenes: allSceneKeys,
   },
@@ -40,7 +40,7 @@ const planConfigs: Record<PlanName, PlanConfig> = {
   },
   internal_yearly: {
     name: "internal_yearly",
-    label: "内测年卡",
+    label: "正式年卡",
     dailyLimit: 30,
     allowedScenes: allSceneKeys,
   },
@@ -55,4 +55,3 @@ const planConfigs: Record<PlanName, PlanConfig> = {
 export function getPlanConfig(planName: PlanName): PlanConfig {
   return planConfigs[planName];
 }
-

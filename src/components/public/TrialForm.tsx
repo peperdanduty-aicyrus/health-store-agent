@@ -22,8 +22,8 @@ export function TrialForm() {
 
   return (
     <form action={action} className="rounded-lg border border-ink/10 bg-white p-5 shadow-sm">
-      <p className="text-sm font-semibold text-coral">试用申请</p>
-      <h2 className="mt-2 text-2xl font-semibold text-ink">提交门店信息后人工开通</h2>
+      <p className="text-sm font-semibold text-coral">开通咨询</p>
+      <h2 className="mt-2 text-2xl font-semibold text-ink">提交门店信息后确认开通方案</h2>
       <div className="mt-5 grid gap-3 sm:grid-cols-2">
         <Field label="门店名称" name="storeName" required />
         <label className="text-sm font-medium text-ink/75">
@@ -47,7 +47,7 @@ export function TrialForm() {
         <Field label="微信号" name="wechatId" />
       </div>
       <label className="mt-3 block text-sm font-medium text-ink/75">
-        想试用的功能
+        关注的功能
         <input
           className="mt-2 min-h-11 w-full rounded-md border border-ink/12 bg-paper px-3 outline-none focus:border-moss"
           name="interestedFeatures"
@@ -67,7 +67,7 @@ export function TrialForm() {
         disabled={pending}
         type="submit"
       >
-        {pending ? "提交中" : "申请 3 天免费试用"}
+        {pending ? "提交中" : "提交开通咨询"}
       </button>
       {state.message ? (
         <p className={`mt-4 rounded-md p-3 text-sm ${state.success ? "bg-moss/10 text-moss" : "bg-coral/10 text-coral"}`}>

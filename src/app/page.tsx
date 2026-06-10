@@ -22,10 +22,10 @@ const scenes = [
 ];
 
 const plans = [
-  ["免费试用", "0 元 / 3 天", "全部功能，每天 5 次"],
   ["基础月卡", "19 元 / 月", "小红书、朋友圈、公众号，每天 30 次"],
   ["标准月卡", "39 元 / 月", "全部 6 个功能，每天 30 次"],
-  ["内测年卡", "168 元 / 年", "全部 6 个功能，每天 30 次"],
+  ["正式年卡", "168 元 / 年", "全部 6 个功能，每天 30 次"],
+  ["代运营陪跑", "面议", "账号诊断、内容规划、人工交付支持"],
 ];
 
 export default function Home() {
@@ -35,7 +35,7 @@ export default function Home() {
         <div className="flex-1">
           <div className="mb-5 inline-flex items-center gap-2 rounded-full border border-moss/25 bg-white px-3 py-1 text-sm text-moss">
             <Sparkles className="h-4 w-4" />
-            本地健康门店内容获客 MVP
+            本地健康门店内容获客工具
           </div>
           <h1 className="max-w-3xl text-4xl font-semibold leading-tight tracking-normal text-ink sm:text-5xl">
             本地健康门店获客助手
@@ -48,7 +48,7 @@ export default function Home() {
               className="inline-flex min-h-12 items-center justify-center gap-2 rounded-md bg-coral px-5 py-3 font-medium text-white shadow-soft"
               href="#trial"
             >
-              申请 3 天免费试用
+              咨询开通
               <ArrowRight className="h-4 w-4" />
             </Link>
             <Link
@@ -56,6 +56,12 @@ export default function Home() {
               href="#plans"
             >
               查看套餐价格
+            </Link>
+            <Link
+              className="inline-flex min-h-12 items-center justify-center rounded-md border border-ink/15 bg-white px-5 py-3 font-medium text-ink"
+              href="/login"
+            >
+              商家登录
             </Link>
           </div>
         </div>
@@ -112,7 +118,7 @@ export default function Home() {
             ))}
           </div>
           <p className="mt-5 rounded-md border border-moss/20 bg-moss/8 p-4 text-sm leading-6 text-ink/72">
-            内测年卡 168 元 / 年，平均每天不到 0.5 元。本工具不承诺直接带来固定订单或固定曝光，但可以帮助门店把内容、团单、好评、私域话术等线上获客基础动作标准化。
+            正式年卡 168 元 / 年，平均每天不到 0.5 元。本工具不承诺直接带来固定订单或固定曝光，但可以帮助门店把内容、团单、好评、私域话术等线上获客基础动作标准化。
           </p>
         </div>
       </section>

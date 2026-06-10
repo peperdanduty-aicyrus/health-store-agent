@@ -1,13 +1,13 @@
 import { CustomerShell } from "@/components/customer/CustomerShell";
 import { SceneCardGrid } from "@/components/customer/SceneCardGrid";
-import { mockStore } from "@/lib/data/store";
+import { getDataStore } from "@/lib/data/repository";
 import { requireUser } from "@/lib/auth/session";
 
 export default async function CustomerAppPage() {
   const profile = await requireUser();
+  const store = await getDataStore();
   const today = new Date().toISOString().slice(0, 10);
-  const todayCount = mockStore
-    .listGenerations({ userId: profile.id })
+  const todayCount = (await store.listGenerations({ userId: profile.id }))
     .filter((record) => record.createdAt.slice(0, 10) === today).length;
 
   return (
@@ -20,4 +20,3 @@ export default async function CustomerAppPage() {
     </CustomerShell>
   );
 }
-

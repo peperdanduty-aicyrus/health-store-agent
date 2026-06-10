@@ -41,10 +41,6 @@ export function LoginForm() {
         {pending ? "登录中" : "登录"}
       </button>
       {state.message ? <p className="mt-4 rounded-md bg-coral/10 p-3 text-sm text-coral">{state.message}</p> : null}
-      <div className="mt-5 rounded-md bg-paper p-3 text-xs leading-5 text-ink/58">
-        演示账号：13900000001 / trial123；13900000002 / basic123；13900000005 / expired123。
-      </div>
     </form>
   );
 }
-

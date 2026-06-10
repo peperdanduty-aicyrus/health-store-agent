@@ -4,8 +4,8 @@ import type { Profile } from "@/lib/data/types";
 
 const navItems = [
   { href: "/cyrus", label: "概览" },
-  { href: "/cyrus/users", label: "用户" },
-  { href: "/cyrus/applications", label: "申请" },
+  { href: "/cyrus/users", label: "账号" },
+  { href: "/cyrus/applications", label: "线索" },
   { href: "/cyrus/generations", label: "记录" },
 ];
 
@@ -31,4 +31,3 @@ export function AdminShell({ children, profile }: { children: ReactNode; profile
     </main>
   );
 }
-
