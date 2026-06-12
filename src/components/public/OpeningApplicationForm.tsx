@@ -24,7 +24,7 @@ export function OpeningApplicationForm() {
   return (
     <form action={action} className="rounded-lg border border-ink/10 bg-white p-5 shadow-sm">
       <p className="text-sm font-semibold text-coral">免费试用</p>
-      <h2 className="mt-2 text-2xl font-semibold text-ink">提交门店信息后确认试用账号</h2>
+      <h2 className="mt-2 text-2xl font-semibold text-ink">免费申请试用账号</h2>
       <p className="mt-2 text-sm leading-6 text-ink/62">只需留下 3 项信息，人工确认后发放免费试用账号，不自动扣费。</p>
       <div className="mt-5 grid gap-3 sm:grid-cols-2">
         <Field label="门店名称" name="storeName" placeholder="例如：某某中医馆 / 某某口腔 / 某某推拿馆" required />
@@ -43,7 +43,7 @@ export function OpeningApplicationForm() {
             ))}
           </select>
         </label>
-        <Field label="联系方式" name="phone" placeholder="填写手机号或微信号，方便发放试用账号" required />
+        <Field label="微信号 / 手机号" name="phone" placeholder="填写手机号或微信号，方便发放试用账号" required />
       </div>
       <label className="mt-3 block text-sm font-medium text-ink/75">
         备注需求

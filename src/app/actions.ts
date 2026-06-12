@@ -71,7 +71,7 @@ export async function submitOpeningApplication(
   revalidatePath("/cyrus/applications");
 
   return {
-    message: "免费试用申请已提交，请添加微信，人工确认后发放试用账号。",
+    message: "申请已提交，请添加微信领取试用账号。人工确认后会为你发放登录账号和密码。",
     success: true,
   };
 }

@@ -1,5 +1,6 @@
 "use client";
 
+import Link from "next/link";
 import { useActionState } from "react";
 import { loginWithPassword, type LoginFormState } from "@/app/actions";
 
@@ -13,7 +14,9 @@ export function LoginForm() {
   return (
     <form action={action} className="rounded-lg border border-ink/10 bg-white p-5 shadow-sm">
       <h1 className="text-2xl font-semibold text-ink">登录账号</h1>
-      <p className="mt-2 text-sm leading-6 text-ink/62">账号由管理员人工开通，不支持自助注册。</p>
+      <p className="mt-2 text-sm leading-6 text-ink/62">
+        试用账号由人工发放，请使用手机号和密码登录。如还没有账号，请先返回首页申请免费试用。
+      </p>
       <label className="mt-5 block text-sm font-medium text-ink/75">
         手机号
         <input
@@ -41,6 +44,12 @@ export function LoginForm() {
         {pending ? "登录中" : "登录"}
       </button>
       {state.message ? <p className="mt-4 rounded-md bg-coral/10 p-3 text-sm text-coral">{state.message}</p> : null}
+      <Link
+        className="mt-4 inline-flex min-h-11 w-full items-center justify-center rounded-md border border-ink/15 bg-paper px-4 py-2 text-sm font-medium text-ink"
+        href="/#apply"
+      >
+        还没有账号？申请免费试用
+      </Link>
     </form>
   );
 }

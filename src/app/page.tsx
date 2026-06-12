@@ -31,8 +31,8 @@ const plans = [
 
 const trialSteps = [
   ["提交 3 项信息", "填写门店名称、门店类型、联系方式。"],
-  ["人工确认账号", "添加微信后，人工确认门店类型和试用需求。"],
-  ["发放免费试用账号", "免费体验生成内容，满意后再选择是否开通正式套餐。"],
+  ["添加微信确认", "人工确认门店类型和试用需求。"],
+  ["发放试用账号", "免费体验工具，满意后再决定是否开通正式套餐。"],
 ];
 
 const trustPoints = [
@@ -46,7 +46,29 @@ const trustPoints = [
 
 export default function Home() {
   return (
-    <main className="min-h-screen">
+    <main className="min-h-screen pb-20 sm:pb-0">
+      <header className="sticky top-0 z-30 border-b border-ink/10 bg-paper/95 backdrop-blur">
+        <div className="mx-auto flex max-w-6xl items-center justify-between gap-3 px-5 py-3 sm:px-8">
+          <Link className="text-sm font-semibold text-ink sm:text-base" href="/">
+            本地健康门店获客助手
+          </Link>
+          <nav className="flex shrink-0 items-center gap-2">
+            <Link
+              className="inline-flex min-h-10 items-center justify-center rounded-md bg-coral px-3 py-2 text-sm font-medium text-white shadow-soft sm:px-4"
+              href="#apply"
+            >
+              免费申请试用
+            </Link>
+            <Link
+              className="inline-flex min-h-10 items-center justify-center rounded-md border border-ink/15 bg-white px-3 py-2 text-sm font-medium text-ink sm:px-4"
+              href="/login"
+            >
+              已有账号登录
+            </Link>
+          </nav>
+        </div>
+      </header>
+
       <section className="mx-auto flex w-full max-w-6xl flex-col gap-10 px-5 py-8 sm:px-8 lg:flex-row lg:items-center lg:py-14">
         <div className="flex-1">
           <div className="mb-5 inline-flex items-center gap-2 rounded-full border border-moss/25 bg-white px-3 py-1 text-sm text-moss">
@@ -72,26 +94,18 @@ export default function Home() {
             </Link>
             <Link
               className="inline-flex min-h-12 items-center justify-center rounded-md border border-ink/15 bg-white px-5 py-3 font-medium text-ink"
-              href="#store-types"
+              href="/login"
             >
-              查看适合哪些门店
+              已有账号？立即登录
             </Link>
           </div>
           <p className="mt-4 text-sm leading-6 text-ink/64">只需留下 3 项信息，人工确认后发放试用账号，不自动扣费。</p>
+          <Link className="mt-3 inline-flex text-sm font-medium text-moss" href="#plans">
+            试用满意后可查看正式套餐
+          </Link>
         </div>
 
         <WechatQrPanel />
-      </section>
-
-      <section className="border-y border-ink/10 bg-white" id="store-types">
-        <div className="mx-auto grid max-w-6xl gap-4 px-5 py-8 sm:grid-cols-2 sm:px-8 lg:grid-cols-3">
-          {storeTypes.map((type) => (
-            <div key={type} className="flex items-center gap-2 text-sm text-ink/78">
-              <CheckCircle2 className="h-4 w-4 shrink-0 text-moss" />
-              {type}
-            </div>
-          ))}
-        </div>
       </section>
 
       <section className="mx-auto max-w-6xl px-5 py-10 sm:px-8" id="trial">
@@ -119,7 +133,7 @@ export default function Home() {
           ))}
         </div>
         <p className="mt-5 rounded-md border border-ink/10 bg-white p-4 text-sm leading-6 text-ink/66">
-          生成内容只是初稿，门店可以根据实际项目、资质和服务情况进行修改后发布。
+          不自动扣费，不自助付款，试用后再决定是否长期使用。生成内容只是初稿，门店可以根据实际项目、资质和服务情况进行修改后发布。
         </p>
       </section>
 
@@ -135,6 +149,30 @@ export default function Home() {
               <p className="mt-3 text-sm leading-6 text-ink/64">{detail}</p>
             </div>
           ))}
+        </div>
+      </section>
+
+      <section className="border-y border-ink/10 bg-white" id="store-types">
+        <div className="mx-auto max-w-6xl px-5 py-8 sm:px-8">
+          <div className="flex flex-col gap-2">
+            <p className="text-sm font-semibold text-coral">适合门店</p>
+            <h2 className="text-2xl font-semibold text-ink">适合真实本地健康门店先试用</h2>
+          </div>
+          <div className="mt-6 grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+            {storeTypes.map((type) => (
+              <div key={type} className="flex items-center gap-2 text-sm text-ink/78">
+                <CheckCircle2 className="h-4 w-4 shrink-0 text-moss" />
+                {type}
+              </div>
+            ))}
+          </div>
+        </div>
+      </section>
+
+      <section className="mx-auto max-w-6xl px-5 py-10 sm:px-8" id="apply">
+        <div className="grid gap-6 lg:grid-cols-[1fr_280px]">
+          <OpeningApplicationForm />
+          <WechatQrPanel mode="inline" />
         </div>
       </section>
 
@@ -160,17 +198,19 @@ export default function Home() {
             ))}
           </div>
           <p className="mt-5 rounded-md border border-moss/20 bg-moss/8 p-4 text-sm leading-6 text-ink/72">
-            工具主要帮助门店更快完成内容、团单、好评回复、私域沟通等日常线上运营动作，适合先试用后再决定是否长期使用。
+            工具主要帮助门店更快完成内容、团单、好评回复、私域沟通等日常线上运营动作，生成内容可根据门店实际情况修改后发布。
           </p>
         </div>
       </section>
 
-      <section className="mx-auto max-w-6xl px-5 py-10 sm:px-8" id="apply">
-        <div className="grid gap-6 lg:grid-cols-[1fr_280px]">
-          <OpeningApplicationForm />
-          <WechatQrPanel mode="inline" />
-        </div>
-      </section>
+      <div className="fixed inset-x-0 bottom-0 z-40 grid grid-cols-2 gap-2 border-t border-ink/10 bg-white p-3 shadow-soft sm:hidden">
+        <Link className="inline-flex min-h-11 items-center justify-center rounded-md bg-coral px-4 py-2 text-sm font-medium text-white" href="#apply">
+          免费试用
+        </Link>
+        <Link className="inline-flex min-h-11 items-center justify-center rounded-md border border-ink/15 bg-paper px-4 py-2 text-sm font-medium text-ink" href="/login">
+          登录
+        </Link>
+      </div>
     </main>
   );
 }
