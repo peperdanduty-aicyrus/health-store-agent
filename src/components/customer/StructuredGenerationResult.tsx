@@ -63,10 +63,11 @@ export function StructuredGenerationResult({ content, generationId }: { content:
       <div className="mt-4 grid gap-4">
         {Object.entries(parsed).map(([key, value]) => (
           <ResultSection
-            copied={copiedKey === key}
+            copiedKey={copiedKey}
             key={key}
             name={labelFor(key)}
-            onCopy={() => copyText(`${labelFor(key)}\n${renderValue(value)}`, key)}
+            onCopy={(text, copyKey) => copyText(text, copyKey)}
+            sectionKey={key}
             value={value}
           />
         ))}
@@ -85,14 +86,16 @@ function ResultHeader({ copied, onCopy }: { copied: boolean; onCopy: () => void 
 }
 
 function ResultSection({
-  copied,
+  copiedKey,
   name,
   onCopy,
+  sectionKey,
   value,
 }: {
-  copied: boolean;
+  copiedKey: string;
   name: string;
-  onCopy: () => void;
+  onCopy: (text: string, key: string) => void;
+  sectionKey: string;
   value: StructuredValue;
 }) {
   if (Array.isArray(value)) {
@@ -100,12 +103,19 @@ function ResultSection({
       <div>
         <div className="mb-2 flex flex-wrap items-center justify-between gap-2">
           <p className="text-sm font-semibold text-ink">{name}</p>
-          <CopyButton copied={copied} label="复制" onCopy={onCopy} />
         </div>
         <div className="grid gap-2 sm:grid-cols-2">
           {value.map((item, index) => (
-            <div className="rounded-md bg-white p-3 text-sm leading-6 text-ink/75" key={`${name}-${index}`}>
-              {renderValue(item)}
+            <div
+              className="flex min-h-12 items-start justify-between gap-3 rounded-md bg-white p-3 text-sm leading-6 text-ink/75"
+              key={`${sectionKey}-${index}`}
+            >
+              <span className="select-text">{renderValue(item)}</span>
+              <CopyButton
+                copied={copiedKey === `${sectionKey}-${index}`}
+                label="复制"
+                onCopy={() => onCopy(renderValue(item), `${sectionKey}-${index}`)}
+              />
             </div>
           ))}
         </div>
@@ -117,7 +127,7 @@ function ResultSection({
     <div>
       <div className="mb-2 flex flex-wrap items-center justify-between gap-2">
         <p className="text-sm font-semibold text-ink">{name}</p>
-        <CopyButton copied={copied} label="复制" onCopy={onCopy} />
+        <CopyButton copied={copiedKey === sectionKey} label="复制" onCopy={() => onCopy(`${name}\n${renderValue(value)}`, sectionKey)} />
       </div>
       <div className="select-text whitespace-pre-wrap rounded-md bg-white p-3 text-sm leading-7 text-ink/75">{renderValue(value)}</div>
     </div>
@@ -127,7 +137,7 @@ function ResultSection({
 function CopyButton({ copied, label, onCopy }: { copied: boolean; label: string; onCopy: () => void }) {
   return (
     <button
-      className="inline-flex min-h-9 items-center gap-1 rounded-md border border-ink/10 bg-white px-3 py-1.5 text-sm font-medium text-ink transition hover:border-moss/40"
+      className="inline-flex min-h-9 shrink-0 items-center gap-1 rounded-md border border-ink/10 bg-white px-3 py-1.5 text-sm font-medium text-ink transition hover:border-moss/40"
       onClick={onCopy}
       type="button"
     >

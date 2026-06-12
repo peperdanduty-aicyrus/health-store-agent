@@ -9,7 +9,6 @@ const storeTypes = [
   "口腔门诊",
   "医院科室 / 综合门诊",
   "健康管理中心 / 体检中心",
-  "宠物医院",
 ];
 
 const scenes = [
@@ -41,29 +40,26 @@ export default function Home() {
             本地健康门店获客助手
           </h1>
           <p className="mt-5 max-w-2xl text-lg leading-8 text-ink/72">
-            用 AI 帮中医馆、推拿馆、口腔门诊、健康管理中心、宠物医院快速生成小红书、朋友圈、公众号、美团团单和私域话术。
+            用 AI 帮中医馆、推拿馆、口腔门诊、健康管理中心快速生成小红书、朋友圈、公众号、美团团单和私域话术。
           </p>
           <div className="mt-7 flex flex-col gap-3 sm:flex-row">
             <Link
               className="inline-flex min-h-12 items-center justify-center gap-2 rounded-md bg-coral px-5 py-3 font-medium text-white shadow-soft"
               href="#apply"
             >
-              咨询开通
+              申请试用
               <ArrowRight className="h-4 w-4" />
-            </Link>
-            <Link
-              className="inline-flex min-h-12 items-center justify-center rounded-md border border-ink/15 bg-white px-5 py-3 font-medium text-ink"
-              href="#plans"
-            >
-              查看套餐价格
             </Link>
             <Link
               className="inline-flex min-h-12 items-center justify-center rounded-md border border-ink/15 bg-white px-5 py-3 font-medium text-ink"
               href="/login"
             >
-              商家登录
+              已有账号登录
             </Link>
           </div>
+          <Link className="mt-4 inline-flex text-sm font-medium text-moss" href="#plans">
+            查看套餐价格
+          </Link>
         </div>
 
         <WechatQrPanel />

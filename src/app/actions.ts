@@ -39,7 +39,7 @@ export type PasswordFormState = {
   success: boolean;
 };
 
-const requiredFields = ["storeName", "storeType", "cityArea", "contactName", "phone"];
+const requiredFields = ["storeName", "storeType", "phone"];
 
 export async function submitOpeningApplication(
   _previousState: OpeningApplicationFormState,
@@ -50,7 +50,7 @@ export async function submitOpeningApplication(
   for (const field of requiredFields) {
     if (!String(values[field] || "").trim()) {
       return {
-        message: "请先填写门店名称、门店类型、城市 / 区域、联系人和手机号。",
+        message: "请先填写门店名称、门店类型和微信号 / 手机号。",
         success: false,
       };
     }
@@ -58,14 +58,14 @@ export async function submitOpeningApplication(
 
   const store = await getDataStore();
   await store.createOpeningApplication({
-    cityArea: String(values.cityArea),
-    contactName: String(values.contactName),
+    cityArea: String(values.cityArea || ""),
+    contactName: String(values.contactName || values.phone),
     interestedFeatures: String(values.interestedFeatures || ""),
     note: String(values.note || ""),
     phone: String(values.phone),
     storeName: String(values.storeName),
     storeType: String(values.storeType),
-    wechatId: String(values.wechatId || ""),
+    wechatId: String(values.wechatId || values.phone),
   });
   revalidatePath("/cyrus");
   revalidatePath("/cyrus/applications");
