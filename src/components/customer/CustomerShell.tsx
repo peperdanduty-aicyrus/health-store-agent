@@ -11,12 +11,14 @@ const navItems = [
 ];
 
 export function CustomerShell({ children, profile }: { children: ReactNode; profile: Profile }) {
+  const storeName = profile.storeName.trim() === "测试" ? "体验门店" : profile.storeName;
+
   return (
     <main className="min-h-screen bg-paper">
       <header className="border-b border-ink/10 bg-white">
         <div className="mx-auto flex max-w-6xl flex-col gap-3 px-5 py-4 sm:flex-row sm:items-center sm:justify-between sm:px-8">
           <div>
-            <p className="text-sm text-ink/58">{profile.storeName}</p>
+            <p className="text-sm text-ink/58">{storeName}</p>
             <h1 className="text-xl font-semibold text-ink">本地健康门店获客助手</h1>
           </div>
           <nav className="flex flex-wrap gap-2">
