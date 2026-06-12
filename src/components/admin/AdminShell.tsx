@@ -7,6 +7,7 @@ const navItems = [
   { href: "/cyrus/users", label: "账号" },
   { href: "/cyrus/applications", label: "线索" },
   { href: "/cyrus/generations", label: "记录" },
+  { href: "/cyrus/settings", label: "设置" },
 ];
 
 export function AdminShell({ children, profile }: { children: ReactNode; profile: Profile }) {

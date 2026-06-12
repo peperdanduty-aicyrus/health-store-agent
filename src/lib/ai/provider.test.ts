@@ -28,8 +28,12 @@ describe("AI provider layer", () => {
     expect(result.provider).toBe("mock");
     expect(result.model).toBe("mock-health-copywriter");
     expect(result.prompt).toContain("小红书文案");
-    expect(result.content).toContain("5 个小红书标题");
-    expect(result.content).toContain("春和中医馆");
+    expect(result.prompt).toContain("只输出一个合法 JSON 对象");
+    expect(JSON.parse(result.content)).toMatchObject({
+      body: expect.stringContaining("春和中医馆"),
+      tags: expect.arrayContaining(["本地健康"]),
+      titles: expect.any(Array),
+    });
   });
 
   it("keeps Qwen behind an OpenAI-compatible provider and reports missing API key clearly", async () => {

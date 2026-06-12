@@ -2,6 +2,7 @@ import type { SceneKey } from "./scenes";
 import { allSceneKeys } from "./scenes";
 
 export type PlanName =
+  | "temporary_opening"
   | "basic_monthly"
   | "standard_monthly"
   | "internal_yearly"
@@ -19,6 +20,12 @@ export type PlanConfig = {
 const basicScenes: SceneKey[] = ["xiaohongshu", "moments", "official_account"];
 
 const planConfigs: Record<PlanName, PlanConfig> = {
+  temporary_opening: {
+    name: "temporary_opening",
+    label: "临时开通",
+    dailyLimit: 5,
+    allowedScenes: allSceneKeys,
+  },
   basic_monthly: {
     name: "basic_monthly",
     label: "基础月卡",

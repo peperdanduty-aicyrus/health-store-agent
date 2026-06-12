@@ -34,6 +34,11 @@ export type CreateMerchantFormState = {
   success: boolean;
 };
 
+export type PasswordFormState = {
+  message: string;
+  success: boolean;
+};
+
 const requiredFields = ["storeName", "storeType", "cityArea", "contactName", "phone"];
 
 export async function submitOpeningApplication(
@@ -78,6 +83,12 @@ export async function loginWithPassword(_previousState: LoginFormState, formData
   const profile = await store.login(phone, password);
 
   if (!profile) {
+    const disabledProfile = (await store.listUsers()).find(
+      (user) => user.phone === phone && user.password === password && user.disabled,
+    );
+    if (disabledProfile) {
+      return { message: "账号已被禁用，请联系管理员。" };
+    }
     return { message: "账号或密码不正确，请确认后重试。" };
   }
 
@@ -117,9 +128,10 @@ export async function createMerchantAccount(
   }
 
   const planName = String(formData.get("planName") || "standard_monthly") as PlanName;
+  const applicationId = String(formData.get("applicationId") || "");
   const existing = (await store.listUsers()).find((user) => user.phone === String(formData.get("phone")));
   if (existing) {
-    return { message: "这个手机号已经能登录，请确认是否重复创建。", success: false };
+    return { message: "该手机号已存在客户账号", success: false };
   }
 
   const input: CreateUserInput = {
@@ -138,11 +150,101 @@ export async function createMerchantAccount(
     storeType: String(formData.get("storeType")),
   };
 
-  await store.createUser(input);
+  const created = await store.createUser(input);
+  if (applicationId) {
+    await store.updateOpeningApplicationStatus(applicationId, "opened", created.id);
+  }
   revalidatePath("/cyrus");
+  revalidatePath("/cyrus/applications");
   revalidatePath("/cyrus/users");
 
   return { message: `已创建账号：${input.phone}，客户登录地址是 /login。`, success: true };
+}
+
+export async function toggleCustomerDisabled(
+  _previousState: CreateMerchantFormState,
+  formData: FormData,
+): Promise<CreateMerchantFormState> {
+  const admin = await requireAdminProfile();
+  if (!admin) {
+    return { message: "请先登录管理员后台。", success: false };
+  }
+
+  const userId = String(formData.get("userId") || "");
+  const disabled = String(formData.get("disabled") || "") === "true";
+  const updated = await (await getDataStore()).updateUserDisabled(userId, disabled);
+
+  if (!updated) {
+    return { message: "未找到可操作的客户账号。", success: false };
+  }
+
+  revalidatePath("/cyrus/users");
+  revalidatePath(`/cyrus/users/${userId}`);
+  return { message: disabled ? "已禁用该客户账号。" : "已启用该客户账号。", success: true };
+}
+
+export async function resetCustomerPassword(
+  _previousState: PasswordFormState,
+  formData: FormData,
+): Promise<PasswordFormState> {
+  const admin = await requireAdminProfile();
+  if (!admin) {
+    return { message: "请先登录管理员后台。", success: false };
+  }
+
+  const userId = String(formData.get("userId") || "");
+  const newPassword = String(formData.get("newPassword") || "");
+  const confirmPassword = String(formData.get("confirmPassword") || "");
+  const validation = validateNewPassword(newPassword, confirmPassword);
+  if (validation) {
+    return { message: validation, success: false };
+  }
+
+  const store = await getDataStore();
+  const user = await store.getUserById(userId);
+  if (!user || user.role !== "user") {
+    return { message: "未找到客户账号。", success: false };
+  }
+
+  const updated = await store.updateUserPassword(userId, newPassword);
+  if (!updated) {
+    return { message: "未找到客户账号。", success: false };
+  }
+
+  revalidatePath("/cyrus/users");
+  revalidatePath(`/cyrus/users/${userId}`);
+  return { message: "客户密码已重置。", success: true };
+}
+
+export async function changeOwnPassword(
+  _previousState: PasswordFormState,
+  formData: FormData,
+): Promise<PasswordFormState> {
+  const cookieStore = await cookies();
+  const userId = cookieStore.get(sessionCookieName)?.value;
+  const store = await getDataStore();
+  const profile = userId ? await store.getUserById(userId) : null;
+
+  if (!profile) {
+    return { message: "请先登录。", success: false };
+  }
+
+  const currentPassword = String(formData.get("currentPassword") || "");
+  const newPassword = String(formData.get("newPassword") || "");
+  const confirmPassword = String(formData.get("confirmPassword") || "");
+
+  if (profile.password !== currentPassword) {
+    return { message: "原密码不正确。", success: false };
+  }
+
+  const validation = validateNewPassword(newPassword, confirmPassword);
+  if (validation) {
+    return { message: validation, success: false };
+  }
+
+  await store.updateUserPassword(profile.id, newPassword);
+  cookieStore.delete(sessionCookieName);
+  redirect(profile.role === "admin" ? "/cyrus" : "/login");
 }
 
 export async function generateForScene(
@@ -227,4 +329,25 @@ function getPermissionMessage(reason: string): string {
   };
 
   return messages[reason] ?? "当前账号暂不能生成。";
+}
+
+async function requireAdminProfile() {
+  const cookieStore = await cookies();
+  const adminId = cookieStore.get(sessionCookieName)?.value;
+  const store = await getDataStore();
+  const admin = adminId ? await store.getUserById(adminId) : null;
+  return admin?.role === "admin" ? admin : null;
+}
+
+function validateNewPassword(newPassword: string, confirmPassword: string): string {
+  if (!newPassword || !confirmPassword) {
+    return "请填写新密码和确认新密码。";
+  }
+  if (newPassword.length < 6) {
+    return "新密码至少 6 位。";
+  }
+  if (newPassword !== confirmPassword) {
+    return "两次输入的新密码不一致。";
+  }
+  return "";
 }

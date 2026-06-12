@@ -38,6 +38,7 @@ export function createMockStore(initialState?: Partial<StoreState>) {
       const application: OpeningApplication = {
         ...input,
         id: makeId("application", state.applications.length + 1),
+        openedUserId: "",
         status: "new",
         createdAt: new Date().toISOString(),
         updatedAt: new Date().toISOString(),
@@ -81,7 +82,10 @@ export function createMockStore(initialState?: Partial<StoreState>) {
     },
 
     login(phone: string, password: string): Profile | null {
-      return state.profiles.find((profile) => profile.phone === phone && profile.password === password) ?? null;
+      return (
+        state.profiles.find((profile) => profile.phone === phone && profile.password === password && !profile.disabled) ??
+        null
+      );
     },
 
     markGenerationCopied(id: string): GenerationRecord | null {
@@ -102,14 +106,39 @@ export function createMockStore(initialState?: Partial<StoreState>) {
       return record;
     },
 
-    updateOpeningApplicationStatus(id: string, status: OpeningApplicationStatus): OpeningApplication | null {
+    updateOpeningApplicationStatus(
+      id: string,
+      status: OpeningApplicationStatus,
+      openedUserId = "",
+    ): OpeningApplication | null {
       const application = state.applications.find((item) => item.id === id);
       if (!application) {
         return null;
       }
       application.status = status;
+      application.openedUserId = openedUserId || application.openedUserId;
       application.updatedAt = new Date().toISOString();
       return application;
+    },
+
+    updateUserDisabled(id: string, disabled: boolean): Profile | null {
+      const profile = state.profiles.find((item) => item.id === id);
+      if (!profile || profile.role === "admin") {
+        return null;
+      }
+      profile.disabled = disabled;
+      profile.updatedAt = new Date().toISOString();
+      return profile;
+    },
+
+    updateUserPassword(id: string, password: string): Profile | null {
+      const profile = state.profiles.find((item) => item.id === id);
+      if (!profile) {
+        return null;
+      }
+      profile.password = password;
+      profile.updatedAt = new Date().toISOString();
+      return profile;
     },
   };
 }

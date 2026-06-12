@@ -60,6 +60,88 @@ describe("mock data store", () => {
     });
   });
 
+  it("links an opened application to the created customer account", () => {
+    const store = createMockStore();
+    const application = store.createOpeningApplication({
+      cityArea: "北京朝阳",
+      contactName: "王店长",
+      interestedFeatures: "小红书文案、私域成交话术",
+      note: "准备开通",
+      phone: "13922223333",
+      storeName: "同世堂中医馆",
+      storeType: "中医馆 / 中医诊所",
+      wechatId: "wang-account",
+    });
+    const user = store.createUser({
+      cityArea: application.cityArea,
+      dailyLimit: 5,
+      disabled: false,
+      expiresAt: "2026-06-13",
+      mainProjects: application.note,
+      memberStatus: "paid",
+      password: "initial123",
+      phone: application.phone,
+      planName: "temporary_opening",
+      role: "user",
+      storeAdvantages: application.wechatId,
+      storeName: application.storeName,
+      storeType: application.storeType,
+    });
+
+    expect(store.updateOpeningApplicationStatus(application.id, "opened", user.id)).toMatchObject({
+      id: application.id,
+      openedUserId: user.id,
+      status: "opened",
+    });
+  });
+
+  it("blocks disabled users from logging in until re-enabled", () => {
+    const store = createMockStore();
+    const user = store.createUser({
+      cityArea: "上海浦东",
+      dailyLimit: 30,
+      disabled: false,
+      expiresAt: "2026-07-10",
+      mainProjects: "洁牙、儿童涂氟",
+      memberStatus: "paid",
+      password: "initial123",
+      phone: "13911112222",
+      planName: "standard_monthly",
+      role: "user",
+      storeAdvantages: "社区老客多",
+      storeName: "真如口腔",
+      storeType: "口腔门诊",
+    });
+
+    expect(store.updateUserDisabled(user.id, true)).toMatchObject({ disabled: true });
+    expect(store.login("13911112222", "initial123")).toBeNull();
+    expect(store.updateUserDisabled(user.id, false)).toMatchObject({ disabled: false });
+    expect(store.login("13911112222", "initial123")).toMatchObject({ id: user.id });
+  });
+
+  it("updates user passwords and requires the new password on login", () => {
+    const store = createMockStore();
+    const user = store.createUser({
+      cityArea: "上海浦东",
+      dailyLimit: 30,
+      disabled: false,
+      expiresAt: "2026-07-10",
+      mainProjects: "洁牙、儿童涂氟",
+      memberStatus: "paid",
+      password: "initial123",
+      phone: "13911112222",
+      planName: "standard_monthly",
+      role: "user",
+      storeAdvantages: "社区老客多",
+      storeName: "真如口腔",
+      storeType: "口腔门诊",
+    });
+
+    expect(store.updateUserPassword(user.id, "newpass456")).toMatchObject({ updatedAt: expect.any(String) });
+    expect(store.login("13911112222", "initial123")).toBeNull();
+    expect(store.login("13911112222", "newpass456")).toMatchObject({ id: user.id });
+  });
+
   it("records generation results and supports copy and note updates", () => {
     const store = createMockStore();
     const user = store.createUser({

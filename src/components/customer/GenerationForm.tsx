@@ -3,6 +3,7 @@
 import { useActionState } from "react";
 import { generateForScene, type GenerationFormState } from "@/app/actions";
 import { WechatQrPanel } from "../WechatQrPanel";
+import { StructuredGenerationResult } from "./StructuredGenerationResult";
 
 const initialState: GenerationFormState = {
   message: "",
@@ -40,13 +41,7 @@ export function GenerationForm({ scene }: { scene: string }) {
         {state.message ? (
           <p className={`mt-4 rounded-md p-3 text-sm ${state.success ? "bg-moss/10 text-moss" : "bg-coral/10 text-coral"}`}>{state.message}</p>
         ) : null}
-        {state.result ? (
-          <section className="mt-5 rounded-md border border-ink/10 bg-paper p-4">
-            <p className="text-sm font-semibold text-ink">生成结果</p>
-            <pre className="mt-3 whitespace-pre-wrap text-sm leading-7 text-ink/75">{state.result}</pre>
-            <p className="mt-4 rounded-md bg-white p-3 text-sm leading-6 text-ink/70">{state.sensitiveCheck}</p>
-          </section>
-        ) : null}
+        {state.result ? <StructuredGenerationResult content={state.result} sensitiveCheck={state.sensitiveCheck} /> : null}
       </form>
       <WechatQrPanel mode="inline" />
     </div>
@@ -66,4 +61,3 @@ function Field({ label, name, placeholder, required = true }: { label: string; n
     </label>
   );
 }
-

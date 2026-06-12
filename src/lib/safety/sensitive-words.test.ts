@@ -3,9 +3,9 @@ import { scanSensitiveWords } from "./sensitive-words";
 
 describe("sensitive word scanner", () => {
   it("detects high-risk health and advertising expressions", () => {
-    const result = scanSensitiveWords("本项目可以根治肩颈问题，立竿见影，无副作用，还是全城最低价。");
+    const result = scanSensitiveWords("本项目可以根治肩颈问题，立竿见影，无副作用，还是全城最低。");
 
-    expect(result.detectedWords).toEqual(["根治", "立竿见影", "无副作用", "全城最低价"]);
+    expect(result.detectedWords).toEqual(["根治", "立竿见影", "无副作用", "全城最低"]);
     expect(result.hasRisk).toBe(true);
     expect(result.message).toContain("检测到可能存在风险表达");
     expect(result.suggestions).toContain("日常调理");
@@ -16,6 +16,14 @@ describe("sensitive word scanner", () => {
     const result = scanSensitiveWords("治愈不是承诺，不能写治愈。");
 
     expect(result.detectedWords).toEqual(["治愈"]);
+  });
+
+  it("detects xiaohongshu traffic diversion terms and added medical risk terms", () => {
+    const result = scanSensitiveWords("无痛胃肠镜可以加微信了解，也可以扫码进群免费领取资料。");
+
+    expect(result.detectedWords).toEqual(["无痛", "加微信", "微信", "扫码", "进群", "免费领取"]);
+    expect(result.suggestions).toContain("舒适化检查");
+    expect(result.suggestions).toContain("想了解可以留言");
   });
 
   it("returns a no-obvious-risk message when nothing matches", () => {

@@ -13,12 +13,12 @@ const storeTypes = [
 ];
 
 const scenes = [
-  "小红书文案",
-  "朋友圈文案",
-  "公众号文案",
-  "美团 / 点评团单",
-  "点评好评话术",
-  "私域成交话术",
+  ["小红书文案", "快速生成标题、封面文字、正文、标签和评论区引导，并进行敏感词提示。"],
+  ["朋友圈文案", "生成适合老板、店长、前台发布的朋友圈内容，减少硬广感。"],
+  ["公众号文案", "生成中短篇科普文章，适合门店公众号日常更新。"],
+  ["美团 / 点评团单", "生成团单标题、副标题、适合人群、项目亮点和购买须知。"],
+  ["点评好评话术", "生成自然真实的好评参考话术，避免夸大宣传。"],
+  ["私域成交话术", "生成微信沟通回复话术，帮助前台更自然地引导咨询和预约。"],
 ];
 
 const plans = [
@@ -35,7 +35,7 @@ export default function Home() {
         <div className="flex-1">
           <div className="mb-5 inline-flex items-center gap-2 rounded-full border border-moss/25 bg-white px-3 py-1 text-sm text-moss">
             <Sparkles className="h-4 w-4" />
-            本地健康门店内容获客工具
+            本地健康门店获客助手
           </div>
           <h1 className="max-w-3xl text-4xl font-semibold leading-tight tracking-normal text-ink sm:text-5xl">
             本地健康门店获客助手
@@ -86,12 +86,10 @@ export default function Home() {
           <h2 className="text-2xl font-semibold text-ink">6 个高频获客内容场景</h2>
         </div>
         <div className="mt-6 grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-          {scenes.map((scene) => (
+          {scenes.map(([scene, detail]) => (
             <div key={scene} className="rounded-lg border border-ink/10 bg-white p-5 shadow-sm">
               <p className="text-lg font-semibold text-ink">{scene}</p>
-              <p className="mt-3 text-sm leading-6 text-ink/64">
-                后续接入统一生成 API，生成后自动做本地敏感词风险提示。
-              </p>
+              <p className="mt-3 text-sm leading-6 text-ink/64">{detail}</p>
             </div>
           ))}
         </div>

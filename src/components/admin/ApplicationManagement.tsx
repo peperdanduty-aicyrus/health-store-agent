@@ -1,3 +1,4 @@
+import Link from "next/link";
 import type { OpeningApplication } from "@/lib/data/types";
 
 export function ApplicationManagement({ applications }: { applications: OpeningApplication[] }) {
@@ -18,6 +19,21 @@ export function ApplicationManagement({ applications }: { applications: OpeningA
                 {application.storeType} / {application.cityArea} / {application.contactName} / {application.phone}
               </p>
               <p className="mt-2 text-sm leading-6 text-ink/62">{application.interestedFeatures || "未填写关注功能"}</p>
+              <p className="mt-2 text-sm leading-6 text-ink/62">{application.note || "未填写备注"}</p>
+              <div className="mt-4 flex flex-wrap gap-2">
+                {application.status === "opened" ? (
+                  <span className="inline-flex min-h-10 items-center rounded-md bg-moss/10 px-4 text-sm font-medium text-moss">
+                    已开通账号
+                  </span>
+                ) : (
+                  <Link
+                    className="inline-flex min-h-10 items-center rounded-md bg-ink px-4 text-sm font-medium text-white"
+                    href={`/cyrus/users/new?applicationId=${application.id}`}
+                  >
+                    开通为客户账号
+                  </Link>
+                )}
+              </div>
             </article>
           ))
         )}

@@ -76,6 +76,7 @@ export async function createD1Store(db: D1DatabaseLike) {
       const application: OpeningApplication = {
         ...input,
         id: makeId("application"),
+        openedUserId: "",
         status: "new",
         createdAt: now,
         updatedAt: now,
@@ -85,8 +86,8 @@ export async function createD1Store(db: D1DatabaseLike) {
         .prepare(
           `INSERT INTO applications (
             id, storeName, storeType, cityArea, contactName, phone, wechatId,
-            interestedFeatures, note, status, createdAt, updatedAt
-          ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+            interestedFeatures, note, openedUserId, status, createdAt, updatedAt
+          ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
         )
         .bind(
           application.id,
@@ -98,6 +99,7 @@ export async function createD1Store(db: D1DatabaseLike) {
           application.wechatId,
           application.interestedFeatures,
           application.note,
+          application.openedUserId,
           application.status,
           application.createdAt,
           application.updatedAt,
@@ -169,7 +171,7 @@ export async function createD1Store(db: D1DatabaseLike) {
 
     async login(phone: string, password: string): Promise<Profile | null> {
       const row = await db
-        .prepare("SELECT * FROM profiles WHERE phone = ? AND password = ?")
+        .prepare("SELECT * FROM profiles WHERE phone = ? AND password = ? AND disabled = 0")
         .bind(phone, password)
         .first<ProfileRow>();
       return row ? mapProfile(row) : null;
@@ -185,12 +187,37 @@ export async function createD1Store(db: D1DatabaseLike) {
       return getGenerationById(db, id);
     },
 
-    async updateOpeningApplicationStatus(id: string, status: OpeningApplicationStatus): Promise<OpeningApplication | null> {
+    async updateOpeningApplicationStatus(
+      id: string,
+      status: OpeningApplicationStatus,
+      openedUserId = "",
+    ): Promise<OpeningApplication | null> {
       await db
-        .prepare("UPDATE applications SET status = ?, updatedAt = ? WHERE id = ?")
-        .bind(status, new Date().toISOString(), id)
+        .prepare(
+          `UPDATE applications
+           SET status = ?,
+               openedUserId = CASE WHEN ? = '' THEN openedUserId ELSE ? END,
+               updatedAt = ?
+           WHERE id = ?`,
+        )
+        .bind(status, openedUserId, openedUserId, new Date().toISOString(), id)
         .run();
       return db.prepare("SELECT * FROM applications WHERE id = ?").bind(id).first<ApplicationRow>();
+    },
+
+    async updateUserDisabled(id: string, disabled: boolean): Promise<Profile | null> {
+      await db
+        .prepare("UPDATE profiles SET disabled = ?, updatedAt = ? WHERE id = ? AND role = 'user'")
+        .bind(disabled ? 1 : 0, new Date().toISOString(), id)
+        .run();
+      const row = await db.prepare("SELECT * FROM profiles WHERE id = ?").bind(id).first<ProfileRow>();
+      return row?.role === "user" ? mapProfile(row) : null;
+    },
+
+    async updateUserPassword(id: string, password: string): Promise<Profile | null> {
+      await db.prepare("UPDATE profiles SET password = ?, updatedAt = ? WHERE id = ?").bind(password, new Date().toISOString(), id).run();
+      const row = await db.prepare("SELECT * FROM profiles WHERE id = ?").bind(id).first<ProfileRow>();
+      return row ? mapProfile(row) : null;
     },
   };
 }
@@ -231,12 +258,15 @@ async function ensureSchema(db: D1DatabaseLike) {
         wechatId TEXT NOT NULL,
         interestedFeatures TEXT NOT NULL,
         note TEXT NOT NULL,
+        openedUserId TEXT NOT NULL DEFAULT '',
         status TEXT NOT NULL,
         createdAt TEXT NOT NULL,
         updatedAt TEXT NOT NULL
       )`,
     )
     .run();
+
+  await ensureColumn(db, "applications", "openedUserId", "TEXT NOT NULL DEFAULT ''");
 
   await db
     .prepare(
@@ -263,6 +293,14 @@ async function ensureSchema(db: D1DatabaseLike) {
       )`,
     )
     .run();
+}
+
+async function ensureColumn(db: D1DatabaseLike, tableName: string, columnName: string, definition: string) {
+  try {
+    await db.prepare(`ALTER TABLE ${tableName} ADD COLUMN ${columnName} ${definition}`).run();
+  } catch {
+    // Existing D1 databases already have the column after the first deploy.
+  }
 }
 
 async function ensureSeedAdmin(db: D1DatabaseLike) {

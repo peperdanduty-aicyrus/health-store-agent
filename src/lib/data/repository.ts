@@ -25,7 +25,10 @@ export type DataStore = {
   updateOpeningApplicationStatus(
     id: string,
     status: OpeningApplicationStatus,
+    openedUserId?: string,
   ): Promise<OpeningApplication | null> | OpeningApplication | null;
+  updateUserDisabled(id: string, disabled: boolean): Promise<Profile | null> | Profile | null;
+  updateUserPassword(id: string, password: string): Promise<Profile | null> | Profile | null;
 };
 
 let d1StorePromise: Promise<DataStore> | null = null;

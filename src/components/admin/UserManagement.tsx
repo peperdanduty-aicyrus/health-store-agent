@@ -1,3 +1,4 @@
+import Link from "next/link";
 import { getPlanConfig } from "@/lib/domain/plans";
 import type { Profile } from "@/lib/data/types";
 import { CreateMerchantForm } from "./CreateMerchantForm";
@@ -11,7 +12,7 @@ export function UserManagement({ users }: { users: Profile[] }) {
         <table className="w-full min-w-[860px] border-collapse text-left text-sm">
           <thead className="bg-paper text-ink/60">
             <tr>
-              {["手机号", "门店", "类型", "套餐", "状态", "到期", "每日次数", "禁用"].map((header) => (
+              {["手机号", "门店", "类型", "套餐", "状态", "到期", "每日次数", "禁用", "操作"].map((header) => (
                 <th className="px-4 py-3 font-medium" key={header}>
                   {header}
                 </th>
@@ -31,11 +32,16 @@ export function UserManagement({ users }: { users: Profile[] }) {
                   <td className="px-4 py-3">{user.expiresAt}</td>
                   <td className="px-4 py-3">{user.dailyLimit}</td>
                   <td className="px-4 py-3">{user.disabled ? "是" : "否"}</td>
+                  <td className="px-4 py-3">
+                    <Link className="font-medium text-moss" href={`/cyrus/users/${user.id}`}>
+                      管理
+                    </Link>
+                  </td>
                 </tr>
               ))}
             {users.filter((user) => user.role === "user").length === 0 ? (
               <tr className="border-t border-ink/8">
-                <td className="px-4 py-5 text-ink/58" colSpan={8}>
+                <td className="px-4 py-5 text-ink/58" colSpan={9}>
                   暂无商家账号。可以用上面的表单主动创建。
                 </td>
               </tr>

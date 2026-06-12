@@ -20,7 +20,7 @@ export async function getCurrentProfile(): Promise<Profile | null> {
 export async function requireUser(): Promise<Profile> {
   const profile = await getCurrentProfile();
 
-  if (!profile || profile.role !== "user") {
+  if (!profile || profile.role !== "user" || profile.disabled) {
     redirect("/login");
   }
 

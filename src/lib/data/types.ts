@@ -36,12 +36,16 @@ export type OpeningApplication = {
   wechatId: string;
   interestedFeatures: string;
   note: string;
+  openedUserId: string;
   status: OpeningApplicationStatus;
   createdAt: string;
   updatedAt: string;
 };
 
-export type CreateOpeningApplicationInput = Omit<OpeningApplication, "id" | "status" | "createdAt" | "updatedAt">;
+export type CreateOpeningApplicationInput = Omit<
+  OpeningApplication,
+  "id" | "openedUserId" | "status" | "createdAt" | "updatedAt"
+>;
 
 export type GenerationRecord = {
   id: string;
@@ -73,4 +77,3 @@ export type GenerationFilter = {
   planName?: PlanName;
   storeType?: string;
 };
-

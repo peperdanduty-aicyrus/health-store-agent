@@ -11,6 +11,25 @@ const baseProfile: PermissionProfile = {
 };
 
 describe("membership plan permissions", () => {
+  it("allows temporary opened users to use all scenes with a 5 generation daily limit", () => {
+    const profile: PermissionProfile = {
+      ...baseProfile,
+      planName: "temporary_opening",
+    };
+
+    expect(getPlanConfig(profile.planName).dailyLimit).toBe(5);
+    for (const scene of allSceneKeys) {
+      expect(canGenerate({ profile, scene, todayCount: 4, today: "2026-06-10" })).toMatchObject({
+        allowed: true,
+        remainingToday: 1,
+      });
+    }
+    expect(canGenerate({ profile, scene: "xiaohongshu", todayCount: 5, today: "2026-06-10" })).toMatchObject({
+      allowed: false,
+      reason: "daily_limit_reached",
+    });
+  });
+
   it("limits basic monthly users to xiaohongshu, moments, and official account with 30 daily generations", () => {
     const profile: PermissionProfile = {
       ...baseProfile,
@@ -69,6 +88,7 @@ describe("membership plan permissions", () => {
       disabled: true,
     };
 
+    expect(canViewHistory(profile)).toBe(false);
     expect(canGenerate({ profile, scene: "xiaohongshu", todayCount: 0, today: "2026-06-10" })).toMatchObject({
       allowed: false,
       reason: "disabled",
