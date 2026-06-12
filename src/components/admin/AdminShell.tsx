@@ -1,5 +1,7 @@
 import Link from "next/link";
+import { LogOut } from "lucide-react";
 import type { ReactNode } from "react";
+import { logout } from "@/app/actions";
 import type { Profile } from "@/lib/data/types";
 
 const navItems = [
@@ -25,6 +27,16 @@ export function AdminShell({ children, profile }: { children: ReactNode; profile
                 {item.label}
               </Link>
             ))}
+            <form action={logout}>
+              <button
+                aria-label="退出登录"
+                className="inline-flex min-h-10 items-center justify-center rounded-md bg-white/10 px-3 py-2 text-sm font-medium"
+                title="退出登录"
+                type="submit"
+              >
+                <LogOut className="h-4 w-4" />
+              </button>
+            </form>
           </nav>
         </div>
       </header>

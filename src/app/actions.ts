@@ -10,7 +10,7 @@ import type { CreateUserInput } from "@/lib/data/types";
 import type { PlanName } from "@/lib/domain/plans";
 import { canGenerate } from "@/lib/domain/permissions";
 import type { SceneKey } from "@/lib/domain/scenes";
-import { scanSensitiveWords } from "@/lib/safety/sensitive-words";
+import { replaceSensitiveWords } from "@/lib/safety/sensitive-words";
 
 export type OpeningApplicationFormState = {
   message: string;
@@ -100,6 +100,12 @@ export async function loginWithPassword(_previousState: LoginFormState, formData
   });
 
   redirect(profile.role === "admin" ? "/cyrus" : "/app");
+}
+
+export async function logout() {
+  const cookieStore = await cookies();
+  cookieStore.delete(sessionCookieName);
+  redirect("/login");
 }
 
 export async function createMerchantAccount(
@@ -247,6 +253,29 @@ export async function changeOwnPassword(
   redirect(profile.role === "admin" ? "/cyrus" : "/login");
 }
 
+export async function markGeneratedContentCopied(generationId: string): Promise<void> {
+  const cookieStore = await cookies();
+  const userId = cookieStore.get(sessionCookieName)?.value;
+  const store = await getDataStore();
+  const profile = userId ? await store.getUserById(userId) : null;
+
+  if (!profile) {
+    return;
+  }
+
+  const record = await store.getGenerationById(generationId);
+  if (!record) {
+    return;
+  }
+  if (profile.role !== "admin" && record.userId !== profile.id) {
+    return;
+  }
+
+  await store.markGenerationCopied(generationId);
+  revalidatePath("/app/history");
+  revalidatePath("/cyrus/generations");
+}
+
 export async function generateForScene(
   _previousState: GenerationFormState,
   formData: FormData,
@@ -290,7 +319,11 @@ export async function generateForScene(
     storeProfile: profile,
     userId: profile.id,
   });
-  const sensitiveCheck = scanSensitiveWords(generated.content);
+  const safeResult = replaceSensitiveWords(generated.content);
+  const sensitiveCheckResult =
+    safeResult.replacements.length > 0
+      ? `已自动替换风险表达：${safeResult.replacements.map((item) => `${item.from}→${item.to}`).join("、")}。`
+      : "未发现明显高风险表达。";
   const record = await store.createGeneration({
     copied: false,
     extraInfo: input.extraInfo,
@@ -302,8 +335,8 @@ export async function generateForScene(
     projectName: input.projectName,
     prompt: generated.prompt,
     purpose: input.purpose,
-    result: generated.content,
-    sensitiveCheckResult: sensitiveCheck.message,
+    result: safeResult.content,
+    sensitiveCheckResult,
     storeName: profile.storeName,
     storeType: profile.storeType,
     targetCustomer: input.targetCustomer,
@@ -313,9 +346,8 @@ export async function generateForScene(
 
   return {
     generationId: record.id,
-    message: "已生成内容，请发布前结合门店实际情况人工确认。",
-    result: generated.content,
-    sensitiveCheck: sensitiveCheck.message,
+    message: "已生成内容，已自动处理常见敏感表达，请发布前结合门店实际情况人工确认。",
+    result: safeResult.content,
     success: true,
   };
 }

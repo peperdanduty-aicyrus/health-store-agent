@@ -15,6 +15,7 @@ export type DataStore = {
   createGeneration(input: CreateGenerationInput): Promise<GenerationRecord> | GenerationRecord;
   createOpeningApplication(input: CreateOpeningApplicationInput): Promise<OpeningApplication> | OpeningApplication;
   createUser(input: CreateUserInput): Promise<Profile> | Profile;
+  getGenerationById(id: string): Promise<GenerationRecord | null> | GenerationRecord | null;
   getUserById(id: string): Promise<Profile | null> | Profile | null;
   listApplications(): Promise<OpeningApplication[]> | OpeningApplication[];
   listGenerations(filter?: GenerationFilter): Promise<GenerationRecord[]> | GenerationRecord[];

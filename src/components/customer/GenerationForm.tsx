@@ -41,7 +41,7 @@ export function GenerationForm({ scene }: { scene: string }) {
         {state.message ? (
           <p className={`mt-4 rounded-md p-3 text-sm ${state.success ? "bg-moss/10 text-moss" : "bg-coral/10 text-coral"}`}>{state.message}</p>
         ) : null}
-        {state.result ? <StructuredGenerationResult content={state.result} sensitiveCheck={state.sensitiveCheck} /> : null}
+        {state.result ? <StructuredGenerationResult content={state.result} generationId={state.generationId} /> : null}
       </form>
       <WechatQrPanel mode="inline" />
     </div>

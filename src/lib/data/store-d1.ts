@@ -122,6 +122,10 @@ export async function createD1Store(db: D1DatabaseLike) {
       return user;
     },
 
+    async getGenerationById(id: string): Promise<GenerationRecord | null> {
+      return getGenerationById(db, id);
+    },
+
     async getUserById(id: string): Promise<Profile | null> {
       const row = await db.prepare("SELECT * FROM profiles WHERE id = ?").bind(id).first<ProfileRow>();
       return row ? mapProfile(row) : null;

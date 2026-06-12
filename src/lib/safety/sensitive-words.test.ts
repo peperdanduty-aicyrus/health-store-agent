@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { scanSensitiveWords } from "./sensitive-words";
+import { replaceSensitiveWords, scanSensitiveWords } from "./sensitive-words";
 
 describe("sensitive word scanner", () => {
   it("detects high-risk health and advertising expressions", () => {
@@ -32,5 +32,18 @@ describe("sensitive word scanner", () => {
     expect(result.detectedWords).toEqual([]);
     expect(result.hasRisk).toBe(false);
     expect(result.message).toBe("敏感词风险检查：未发现明显高风险表达，请发布前结合实际情况人工确认。");
+  });
+
+  it("replaces risky words with safer publishable wording", () => {
+    const result = replaceSensitiveWords("无痛肩颈根治体验，马上见效，加微信了解，全城最低。");
+
+    expect(result.content).toBe("舒适化肩颈日常调理体验，体验因人而异，留言了解，优惠体验价。");
+    expect(result.replacements).toEqual([
+      { from: "无痛", to: "舒适化" },
+      { from: "根治", to: "日常调理" },
+      { from: "马上见效", to: "体验因人而异" },
+      { from: "加微信", to: "留言了解" },
+      { from: "全城最低", to: "优惠体验价" },
+    ]);
   });
 });

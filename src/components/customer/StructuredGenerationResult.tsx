@@ -1,5 +1,9 @@
 "use client";
 
+import { useState, useTransition } from "react";
+import { Check, Copy } from "lucide-react";
+import { markGeneratedContentCopied } from "@/app/actions";
+
 type StructuredValue = string | number | boolean | null | StructuredValue[] | { [key: string]: StructuredValue };
 
 const labels: Record<string, string> = {
@@ -28,37 +32,77 @@ const labels: Record<string, string> = {
   titles: "标题",
 };
 
-export function StructuredGenerationResult({ content, sensitiveCheck }: { content: string; sensitiveCheck?: string }) {
+export function StructuredGenerationResult({ content, generationId }: { content: string; generationId?: string }) {
   const parsed = parseStructuredContent(content);
+  const fullText = parsed ? formatStructuredContent(parsed) : content;
+  const [copiedKey, setCopiedKey] = useState("");
+  const [, startTransition] = useTransition();
+
+  async function copyText(text: string, key: string) {
+    await navigator.clipboard.writeText(text);
+    setCopiedKey(key);
+    window.setTimeout(() => setCopiedKey((current) => (current === key ? "" : current)), 1600);
+    if (generationId) {
+      startTransition(() => {
+        void markGeneratedContentCopied(generationId);
+      });
+    }
+  }
 
   if (!parsed) {
     return (
       <section className="mt-5 rounded-md border border-ink/10 bg-paper p-4">
-        <p className="text-sm font-semibold text-ink">生成结果</p>
+        <ResultHeader copied={copiedKey === "full"} onCopy={() => copyText(fullText, "full")} />
         <pre className="mt-3 select-text whitespace-pre-wrap text-sm leading-7 text-ink/75">{content}</pre>
-        {sensitiveCheck ? <p className="mt-4 rounded-md bg-white p-3 text-sm leading-6 text-ink/70">{sensitiveCheck}</p> : null}
       </section>
     );
   }
 
   return (
     <section className="mt-5 rounded-md border border-ink/10 bg-paper p-4">
-      <p className="text-sm font-semibold text-ink">生成结果</p>
+      <ResultHeader copied={copiedKey === "full"} onCopy={() => copyText(fullText, "full")} />
       <div className="mt-4 grid gap-4">
         {Object.entries(parsed).map(([key, value]) => (
-          <ResultSection key={key} name={labelFor(key)} value={value} />
+          <ResultSection
+            copied={copiedKey === key}
+            key={key}
+            name={labelFor(key)}
+            onCopy={() => copyText(`${labelFor(key)}\n${renderValue(value)}`, key)}
+            value={value}
+          />
         ))}
       </div>
-      {sensitiveCheck ? <p className="mt-4 rounded-md bg-white p-3 text-sm leading-6 text-ink/70">{sensitiveCheck}</p> : null}
     </section>
   );
 }
 
-function ResultSection({ name, value }: { name: string; value: StructuredValue }) {
+function ResultHeader({ copied, onCopy }: { copied: boolean; onCopy: () => void }) {
+  return (
+    <div className="flex flex-wrap items-center justify-between gap-3">
+      <p className="text-sm font-semibold text-ink">生成结果</p>
+      <CopyButton copied={copied} label="复制全文" onCopy={onCopy} />
+    </div>
+  );
+}
+
+function ResultSection({
+  copied,
+  name,
+  onCopy,
+  value,
+}: {
+  copied: boolean;
+  name: string;
+  onCopy: () => void;
+  value: StructuredValue;
+}) {
   if (Array.isArray(value)) {
     return (
       <div>
-        <p className="mb-2 text-sm font-semibold text-ink">{name}</p>
+        <div className="mb-2 flex flex-wrap items-center justify-between gap-2">
+          <p className="text-sm font-semibold text-ink">{name}</p>
+          <CopyButton copied={copied} label="复制" onCopy={onCopy} />
+        </div>
         <div className="grid gap-2 sm:grid-cols-2">
           {value.map((item, index) => (
             <div className="rounded-md bg-white p-3 text-sm leading-6 text-ink/75" key={`${name}-${index}`}>
@@ -72,9 +116,25 @@ function ResultSection({ name, value }: { name: string; value: StructuredValue }
 
   return (
     <div>
-      <p className="mb-2 text-sm font-semibold text-ink">{name}</p>
+      <div className="mb-2 flex flex-wrap items-center justify-between gap-2">
+        <p className="text-sm font-semibold text-ink">{name}</p>
+        <CopyButton copied={copied} label="复制" onCopy={onCopy} />
+      </div>
       <div className="select-text whitespace-pre-wrap rounded-md bg-white p-3 text-sm leading-7 text-ink/75">{renderValue(value)}</div>
     </div>
+  );
+}
+
+function CopyButton({ copied, label, onCopy }: { copied: boolean; label: string; onCopy: () => void }) {
+  return (
+    <button
+      className="inline-flex min-h-9 items-center gap-1 rounded-md border border-ink/10 bg-white px-3 py-1.5 text-sm font-medium text-ink transition hover:border-moss/40"
+      onClick={onCopy}
+      type="button"
+    >
+      {copied ? <Check className="h-4 w-4 text-moss" /> : <Copy className="h-4 w-4 text-ink/65" />}
+      {copied ? "已复制" : label}
+    </button>
   );
 }
 
@@ -95,6 +155,12 @@ function renderValue(value: StructuredValue): string {
 
 function labelFor(key: string): string {
   return labels[key] ?? key;
+}
+
+function formatStructuredContent(content: Record<string, StructuredValue>): string {
+  return Object.entries(content)
+    .map(([key, value]) => `${labelFor(key)}\n${renderValue(value)}`)
+    .join("\n\n");
 }
 
 function parseStructuredContent(content: string): Record<string, StructuredValue> | null {

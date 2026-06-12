@@ -188,4 +188,50 @@ describe("mock data store", () => {
       userNote: "客户想要更口语",
     });
   });
+
+  it("gets a generation record by id for admin detail pages", () => {
+    const store = createMockStore();
+    const user = store.createUser({
+      cityArea: "上海浦东",
+      dailyLimit: 30,
+      disabled: false,
+      expiresAt: "2026-07-10",
+      mainProjects: "洁牙、儿童涂氟",
+      memberStatus: "paid",
+      password: "initial123",
+      phone: "13911112222",
+      planName: "standard_monthly",
+      role: "user",
+      storeAdvantages: "社区老客多",
+      storeName: "真如口腔",
+      storeType: "口腔门诊",
+    });
+
+    const generation = store.createGeneration({
+      copied: false,
+      extraInfo: "",
+      generationType: "moments",
+      modelName: "mock-health-copywriter",
+      modelProvider: "mock",
+      phone: user.phone,
+      planName: user.planName,
+      projectName: "肩颈调理",
+      prompt: "生成朋友圈文案",
+      purpose: "引流咨询",
+      result: "建议到店评估",
+      sensitiveCheckResult: "已自动替换风险表达。",
+      storeName: user.storeName,
+      storeType: user.storeType,
+      targetCustomer: "上班族",
+      userId: user.id,
+      userNote: "",
+    });
+
+    expect(store.getGenerationById(generation.id)).toMatchObject({
+      id: generation.id,
+      projectName: "肩颈调理",
+      result: "建议到店评估",
+    });
+    expect(store.getGenerationById("missing")).toBeNull();
+  });
 });

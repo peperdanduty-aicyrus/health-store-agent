@@ -77,6 +77,10 @@ export function createMockStore(initialState?: Partial<StoreState>) {
       return [...state.profiles];
     },
 
+    getGenerationById(id: string): GenerationRecord | null {
+      return state.generations.find((record) => record.id === id) ?? null;
+    },
+
     getUserById(id: string): Profile | null {
       return state.profiles.find((profile) => profile.id === id) ?? null;
     },
