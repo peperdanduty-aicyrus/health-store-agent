@@ -7,9 +7,10 @@ import { generateContent } from "@/lib/ai/provider";
 import { sessionCookieName } from "@/lib/auth/session";
 import { getDataStore } from "@/lib/data/repository";
 import type { CreateUserInput } from "@/lib/data/types";
+import { advanceDemoUsage, demoDailyLimit, demoUsageCookieName, serializeDemoUsage } from "@/lib/demo/usage";
 import type { PlanName } from "@/lib/domain/plans";
 import { canGenerate } from "@/lib/domain/permissions";
-import type { SceneKey } from "@/lib/domain/scenes";
+import { sceneDefinitions, type SceneKey } from "@/lib/domain/scenes";
 import { replaceSensitiveWords } from "@/lib/safety/sensitive-words";
 
 export type OpeningApplicationFormState = {
@@ -40,6 +41,14 @@ export type PasswordFormState = {
 };
 
 const requiredFields = ["storeName", "storeType", "cityArea", "contactName", "phone"];
+
+const demoStoreProfile = {
+  cityArea: "演示城市",
+  mainProjects: "肩颈调理、艾灸、日常养护、体质评估",
+  storeAdvantages: "服务流程规范，表达克制，重视客户真实体验",
+  storeName: "演示中医馆",
+  storeType: "中医馆 / 中医诊所",
+};
 
 export async function submitOpeningApplication(
   _previousState: OpeningApplicationFormState,
@@ -347,6 +356,57 @@ export async function generateForScene(
   return {
     generationId: record.id,
     message: "已生成内容，已自动处理常见敏感表达，请发布前结合门店实际情况人工确认。",
+    result: safeResult.content,
+    success: true,
+  };
+}
+
+export async function generateDemoForScene(
+  _previousState: GenerationFormState,
+  formData: FormData,
+): Promise<GenerationFormState> {
+  const scene = String(formData.get("scene") || "") as SceneKey;
+  if (!Object.keys(sceneDefinitions).includes(scene)) {
+    return { message: "未找到对应的生成场景。", success: false };
+  }
+
+  const input = {
+    extraInfo: String(formData.get("extraInfo") || ""),
+    projectName: String(formData.get("projectName") || ""),
+    purpose: String(formData.get("purpose") || ""),
+    targetCustomer: String(formData.get("targetCustomer") || ""),
+  };
+
+  if (!input.projectName || !input.targetCustomer || !input.purpose) {
+    return { message: "请填写项目名称、目标客户和宣传目的。", success: false };
+  }
+
+  const cookieStore = await cookies();
+  const usage = advanceDemoUsage(cookieStore.get(demoUsageCookieName)?.value);
+  if (!usage.allowed) {
+    return {
+      message: `Demo 今日 ${demoDailyLimit} 次生成次数已用完，明天会自动恢复。`,
+      success: false,
+    };
+  }
+
+  cookieStore.set(demoUsageCookieName, serializeDemoUsage(usage.usage), {
+    httpOnly: true,
+    maxAge: 60 * 60 * 48,
+    path: "/",
+    sameSite: "lax",
+  });
+
+  const generated = await generateContent({
+    input,
+    scene,
+    storeProfile: demoStoreProfile,
+    userId: "demo",
+  });
+  const safeResult = replaceSensitiveWords(generated.content);
+
+  return {
+    message: `Demo 已生成，本浏览器今日还剩 ${usage.remaining} 次。`,
     result: safeResult.content,
     success: true,
   };
