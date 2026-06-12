@@ -9,15 +9,17 @@ const storeTypes = [
   "口腔门诊",
   "医院科室 / 综合门诊",
   "健康管理中心 / 体检中心",
+  "宠物医院",
+  "其他本地健康门店",
 ];
 
 const scenes = [
-  ["小红书文案", "快速生成标题、封面文字、正文、标签和评论区引导，并进行敏感词提示。"],
-  ["朋友圈文案", "生成适合老板、店长、前台发布的朋友圈内容，减少硬广感。"],
-  ["公众号文案", "生成中短篇科普文章，适合门店公众号日常更新。"],
-  ["美团 / 点评团单", "生成团单标题、副标题、适合人群、项目亮点和购买须知。"],
-  ["点评好评话术", "生成自然真实的好评参考话术，避免夸大宣传。"],
-  ["私域成交话术", "生成微信沟通回复话术，帮助前台更自然地引导咨询和预约。"],
+  ["小红书文案", "生成标题、封面文字、正文、标签和评论区引导，适合门店日常种草发布。"],
+  ["朋友圈文案", "生成老板、店长、前台都能直接发的朋友圈内容，减少硬广感。"],
+  ["公众号文案", "生成健康科普、项目介绍、节日活动、门店动态等中短篇内容。"],
+  ["美团 / 点评团单", "生成团单标题、副标题、项目亮点、适合人群和购买须知。"],
+  ["好评回复 / 好评参考", "生成自然、真实、不夸大的好评参考和商家回复。"],
+  ["私域成交话术", "生成微信咨询、预约引导、老客回访、活动转化等沟通话术。"],
 ];
 
 const plans = [
@@ -25,6 +27,21 @@ const plans = [
   ["标准月卡", "39 元 / 月", "全部 6 个功能，每天 30 次"],
   ["正式年卡", "168 元 / 年", "全部 6 个功能，每天 30 次"],
   ["代运营陪跑", "面议", "账号诊断、内容规划、人工交付支持"],
+];
+
+const trialSteps = [
+  ["提交 3 项信息", "填写门店名称、门店类型、联系方式。"],
+  ["人工确认账号", "添加微信后，人工确认门店类型和试用需求。"],
+  ["发放免费试用账号", "免费体验生成内容，满意后再选择是否开通正式套餐。"],
+];
+
+const trustPoints = [
+  "不自动扣费",
+  "不自助付款",
+  "人工确认后发放试用账号",
+  "适合真实本地健康门店",
+  "内容可复制、可修改、可直接用于发布",
+  "尽量避免夸大、敏感、违规表达",
 ];
 
 export default function Home() {
@@ -37,35 +54,36 @@ export default function Home() {
             本地健康门店获客助手
           </div>
           <h1 className="max-w-3xl text-4xl font-semibold leading-tight tracking-normal text-ink sm:text-5xl">
-            本地健康门店获客助手
+            本地健康门店 AI 获客文案助手
           </h1>
           <p className="mt-5 max-w-2xl text-lg leading-8 text-ink/72">
-            用 AI 帮中医馆、推拿馆、口腔门诊、健康管理中心快速生成小红书、朋友圈、公众号、美团团单和私域话术。
+            帮中医馆、推拿馆、口腔门诊、健康管理中心、宠物医院，快速生成小红书、朋友圈、公众号、美团点评、好评回复和私域成交话术。
+          </p>
+          <p className="mt-4 max-w-2xl text-base font-medium leading-7 text-moss">
+            先免费试用，满意后再决定是否开通正式套餐。
           </p>
           <div className="mt-7 flex flex-col gap-3 sm:flex-row">
             <Link
               className="inline-flex min-h-12 items-center justify-center gap-2 rounded-md bg-coral px-5 py-3 font-medium text-white shadow-soft"
               href="#apply"
             >
-              申请试用
+              免费申请试用账号
               <ArrowRight className="h-4 w-4" />
             </Link>
             <Link
               className="inline-flex min-h-12 items-center justify-center rounded-md border border-ink/15 bg-white px-5 py-3 font-medium text-ink"
-              href="/login"
+              href="#store-types"
             >
-              已有账号登录
+              查看适合哪些门店
             </Link>
           </div>
-          <Link className="mt-4 inline-flex text-sm font-medium text-moss" href="#plans">
-            查看套餐价格
-          </Link>
+          <p className="mt-4 text-sm leading-6 text-ink/64">只需留下 3 项信息，人工确认后发放试用账号，不自动扣费。</p>
         </div>
 
         <WechatQrPanel />
       </section>
 
-      <section className="border-y border-ink/10 bg-white">
+      <section className="border-y border-ink/10 bg-white" id="store-types">
         <div className="mx-auto grid max-w-6xl gap-4 px-5 py-8 sm:grid-cols-2 sm:px-8 lg:grid-cols-3">
           {storeTypes.map((type) => (
             <div key={type} className="flex items-center gap-2 text-sm text-ink/78">
@@ -74,6 +92,35 @@ export default function Home() {
             </div>
           ))}
         </div>
+      </section>
+
+      <section className="mx-auto max-w-6xl px-5 py-10 sm:px-8" id="trial">
+        <div className="flex flex-col gap-2">
+          <p className="text-sm font-semibold text-coral">免费试用</p>
+          <h2 className="text-2xl font-semibold text-ink">先免费试用，再决定是否开通</h2>
+        </div>
+        <div className="mt-6 grid gap-4 lg:grid-cols-3">
+          {trialSteps.map(([title, detail], index) => (
+            <div key={title} className="rounded-lg border border-ink/10 bg-white p-5 shadow-sm">
+              <span className="inline-flex h-8 w-8 items-center justify-center rounded-full bg-moss text-sm font-semibold text-white">
+                {index + 1}
+              </span>
+              <p className="mt-4 text-lg font-semibold text-ink">{title}</p>
+              <p className="mt-2 text-sm leading-6 text-ink/64">{detail}</p>
+            </div>
+          ))}
+        </div>
+        <div className="mt-5 grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
+          {trustPoints.map((point) => (
+            <div key={point} className="flex items-center gap-2 rounded-md border border-moss/15 bg-moss/8 px-3 py-2 text-sm text-ink/72">
+              <CheckCircle2 className="h-4 w-4 shrink-0 text-moss" />
+              {point}
+            </div>
+          ))}
+        </div>
+        <p className="mt-5 rounded-md border border-ink/10 bg-white p-4 text-sm leading-6 text-ink/66">
+          生成内容只是初稿，门店可以根据实际项目、资质和服务情况进行修改后发布。
+        </p>
       </section>
 
       <section className="mx-auto max-w-6xl px-5 py-10 sm:px-8" id="features">
@@ -95,7 +142,8 @@ export default function Home() {
         <div className="mx-auto max-w-6xl px-5 py-10 sm:px-8">
           <div className="flex flex-col gap-2">
             <p className="text-sm font-semibold text-coral">套餐价格</p>
-            <h2 className="text-2xl font-semibold text-ink">先人工开通，再使用工具</h2>
+            <h2 className="text-2xl font-semibold text-ink">试用满意后，可选择正式套餐</h2>
+            <p className="text-sm leading-6 text-ink/62">免费试用后，如果觉得适合自己的门店，再选择是否开通正式套餐。</p>
           </div>
           <div className="mt-6 grid gap-4 lg:grid-cols-4">
             {plans.map(([name, price, detail]) => (
@@ -112,7 +160,7 @@ export default function Home() {
             ))}
           </div>
           <p className="mt-5 rounded-md border border-moss/20 bg-moss/8 p-4 text-sm leading-6 text-ink/72">
-            正式年卡 168 元 / 年，平均每天不到 0.5 元。本工具不承诺直接带来固定订单或固定曝光，但可以帮助门店把内容、团单、好评、私域话术等线上获客基础动作标准化。
+            工具主要帮助门店更快完成内容、团单、好评回复、私域沟通等日常线上运营动作，适合先试用后再决定是否长期使用。
           </p>
         </div>
       </section>

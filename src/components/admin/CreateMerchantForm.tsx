@@ -15,6 +15,8 @@ const storeTypes = [
   "口腔门诊",
   "医院科室 / 综合门诊",
   "健康管理中心 / 体检中心",
+  "宠物医院",
+  "其他本地健康门店",
 ];
 
 type CreateMerchantDefaults = Partial<{
