@@ -33,4 +33,10 @@ describe("scene prompt builder", () => {
     expect(prompt).toContain("标签最多 6 个");
     expect(prompt).toContain("标签只允许出现在 tags 字段");
   });
+
+  it("does not ask the model to return customer-facing sensitive risk sections", () => {
+    const prompt = buildScenePrompt("xiaohongshu", storeProfile, input);
+
+    expect(prompt).not.toContain("sensitiveCheck");
+  });
 });

@@ -46,4 +46,11 @@ describe("sensitive word scanner", () => {
       { from: "全城最低", to: "优惠体验价" },
     ]);
   });
+
+  it("replaces direct private-message diversion wording", () => {
+    const result = replaceSensitiveWords("想了解具体位置可以私信我。");
+
+    expect(result.content).toBe("想了解具体位置可以留言。");
+    expect(result.replacements).toEqual([{ from: "私信我", to: "留言" }]);
+  });
 });

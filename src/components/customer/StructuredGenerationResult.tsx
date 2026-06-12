@@ -24,7 +24,6 @@ const labels: Record<string, string> = {
   replies: "回复话术",
   reviews: "好评话术",
   sections: "正文段落",
-  sensitiveCheck: "敏感词检查",
   shortPosts: "短朋友圈",
   subtitles: "副标题",
   tags: "标签",
@@ -169,7 +168,8 @@ function parseStructuredContent(content: string): Record<string, StructuredValue
     if (!parsed || Array.isArray(parsed) || typeof parsed !== "object") {
       return null;
     }
-    return parsed as Record<string, StructuredValue>;
+    const { sensitiveCheck: _sensitiveCheck, ...publishableContent } = parsed as Record<string, StructuredValue>;
+    return publishableContent;
   } catch {
     return null;
   }

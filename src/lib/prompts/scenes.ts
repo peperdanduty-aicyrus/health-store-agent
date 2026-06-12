@@ -40,17 +40,17 @@ export function buildScenePrompt(scene: SceneKey, storeProfile: StoreProfileForP
 export function getOutputStructure(scene: SceneKey): string {
   const structures: Record<SceneKey, string> = {
     xiaohongshu:
-      '{"titles":["标题1","标题2","标题3","标题4","标题5"],"coverTexts":["封面文字1","封面文字2","封面文字3"],"body":"正文内容","tags":["标签1","标签2","标签3"],"commentGuide":"评论区引导话术","sensitiveCheck":[]}',
+      '{"titles":["标题1","标题2","标题3","标题4","标题5"],"coverTexts":["封面文字1","封面文字2","封面文字3"],"body":"正文内容","tags":["标签1","标签2","标签3"],"commentGuide":"评论区引导话术"}',
     moments:
-      '{"shortPosts":["短朋友圈1","短朋友圈2","短朋友圈3"],"longPosts":["长朋友圈1","长朋友圈2"],"imageIdeas":["配图建议1","配图建议2","配图建议3"],"closingGuide":"结尾咨询引导","sensitiveCheck":[]}',
+      '{"shortPosts":["短朋友圈1","短朋友圈2","短朋友圈3"],"longPosts":["长朋友圈1","长朋友圈2"],"imageIdeas":["配图建议1","配图建议2","配图建议3"],"closingGuide":"结尾咨询引导"}',
     official_account:
-      '{"titles":["标题1","标题2","标题3"],"intro":"文章开头","sections":[{"heading":"小标题1","body":"正文段落1"},{"heading":"小标题2","body":"正文段落2"},{"heading":"小标题3","body":"正文段落3"}],"closingGuide":"结尾预约或咨询引导","sensitiveCheck":[]}',
+      '{"titles":["标题1","标题2","标题3"],"intro":"文章开头","sections":[{"heading":"小标题1","body":"正文段落1"},{"heading":"小标题2","body":"正文段落2"},{"heading":"小标题3","body":"正文段落3"}],"closingGuide":"结尾预约或咨询引导"}',
     meituan_dianping:
-      '{"titles":["团单标题1","团单标题2","团单标题3","团单标题4","团单标题5"],"subtitles":["副标题1","副标题2","副标题3"],"targetUsers":["适合人群1","适合人群2"],"highlights":["项目亮点1","项目亮点2"],"purchaseNotes":["购买须知1","购买须知2"],"conversionScript":"到店转化话术","sensitiveCheck":[]}',
+      '{"titles":["团单标题1","团单标题2","团单标题3","团单标题4","团单标题5"],"subtitles":["副标题1","副标题2","副标题3"],"targetUsers":["适合人群1","适合人群2"],"highlights":["项目亮点1","项目亮点2"],"purchaseNotes":["购买须知1","购买须知2"],"conversionScript":"到店转化话术"}',
     review_reply:
-      '{"reviews":["好评文案1","好评文案2","好评文案3","好评文案4","好评文案5"],"sensitiveCheck":[]}',
+      '{"reviews":["好评文案1","好评文案2","好评文案3","好评文案4","好评文案5"]}',
     private_domain:
-      '{"replies":[{"question":"顾客问题1","answer":"回复话术1"},{"question":"顾客问题2","answer":"回复话术2"}],"followUp":"后续跟进话术","sensitiveCheck":[]}',
+      '{"replies":[{"question":"顾客问题1","answer":"回复话术1"},{"question":"顾客问题2","answer":"回复话术2"}],"followUp":"后续跟进话术"}',
   };
 
   return structures[scene];
