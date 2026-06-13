@@ -53,4 +53,11 @@ describe("sensitive word scanner", () => {
     expect(result.content).toBe("想了解具体位置可以留言。");
     expect(result.replacements).toEqual([{ from: "私信我", to: "留言" }]);
   });
+
+  it("replaces guarantee-like satisfaction promises", () => {
+    const result = replaceSensitiveWords("需要体检的留言，4.9元包你满意。");
+
+    expect(result.content).toBe("需要体检的留言，4.9元体验后再判断是否适合。");
+    expect(result.replacements).toEqual([{ from: "包你满意", to: "体验后再判断是否适合" }]);
+  });
 });

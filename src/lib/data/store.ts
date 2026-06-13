@@ -1,19 +1,26 @@
-import { seedGenerations, seedProfiles, seedOpeningApplications } from "./seed";
+import { seedGenerations, seedProfiles, seedOpeningApplications, seedWorkbenchAccounts } from "./seed";
 import type {
   CreateGenerationInput,
   CreateOpeningApplicationInput,
   CreateUserInput,
+  CreateWorkbenchAccountInput,
+  CreateWorkbenchGenerationInput,
   GenerationFilter,
   GenerationRecord,
   Profile,
   OpeningApplication,
   OpeningApplicationStatus,
+  WorkbenchAccount,
+  WorkbenchGenerationFilter,
+  WorkbenchGenerationRecord,
 } from "./types";
 
 type StoreState = {
   applications: OpeningApplication[];
   generations: GenerationRecord[];
   profiles: Profile[];
+  workbenchAccounts: WorkbenchAccount[];
+  workbenchGenerations: WorkbenchGenerationRecord[];
 };
 
 export function createMockStore(initialState?: Partial<StoreState>) {
@@ -21,6 +28,8 @@ export function createMockStore(initialState?: Partial<StoreState>) {
     applications: clone(initialState?.applications ?? seedOpeningApplications),
     generations: clone(initialState?.generations ?? seedGenerations),
     profiles: clone(initialState?.profiles ?? seedProfiles),
+    workbenchAccounts: clone(initialState?.workbenchAccounts ?? seedWorkbenchAccounts),
+    workbenchGenerations: clone(initialState?.workbenchGenerations ?? []),
   };
 
   return {
@@ -58,6 +67,33 @@ export function createMockStore(initialState?: Partial<StoreState>) {
       return user;
     },
 
+    createWorkbenchAccount(input: CreateWorkbenchAccountInput): WorkbenchAccount {
+      const account: WorkbenchAccount = {
+        ...input,
+        id: makeId("workbench_account", state.workbenchAccounts.length + 1),
+        createdAt: new Date().toISOString(),
+        updatedAt: new Date().toISOString(),
+      };
+      state.workbenchAccounts.unshift(account);
+      return account;
+    },
+
+    createWorkbenchGeneration(input: CreateWorkbenchGenerationInput): WorkbenchGenerationRecord {
+      const record: WorkbenchGenerationRecord = {
+        ...input,
+        id: makeId("workbench_generation", state.workbenchGenerations.length + 1),
+        createdAt: new Date().toISOString(),
+      };
+      state.workbenchGenerations.unshift(record);
+      return record;
+    },
+
+    deleteWorkbenchGeneration(id: string): boolean {
+      const originalLength = state.workbenchGenerations.length;
+      state.workbenchGenerations = state.workbenchGenerations.filter((record) => record.id !== id);
+      return state.workbenchGenerations.length !== originalLength;
+    },
+
     listApplications(): OpeningApplication[] {
       return [...state.applications];
     },
@@ -77,12 +113,30 @@ export function createMockStore(initialState?: Partial<StoreState>) {
       return [...state.profiles];
     },
 
+    listWorkbenchAccounts(): WorkbenchAccount[] {
+      return [...state.workbenchAccounts];
+    },
+
+    listWorkbenchGenerations(filter: WorkbenchGenerationFilter = {}): WorkbenchGenerationRecord[] {
+      return state.workbenchGenerations.filter((record) => {
+        return matches(filter.accountId, record.accountId) && matches(filter.generationType, record.generationType);
+      });
+    },
+
     getGenerationById(id: string): GenerationRecord | null {
       return state.generations.find((record) => record.id === id) ?? null;
     },
 
     getUserById(id: string): Profile | null {
       return state.profiles.find((profile) => profile.id === id) ?? null;
+    },
+
+    getWorkbenchAccountById(id: string): WorkbenchAccount | null {
+      return state.workbenchAccounts.find((account) => account.id === id) ?? null;
+    },
+
+    getWorkbenchGenerationById(id: string): WorkbenchGenerationRecord | null {
+      return state.workbenchGenerations.find((record) => record.id === id) ?? null;
     },
 
     login(phone: string, password: string): Profile | null {
@@ -92,8 +146,24 @@ export function createMockStore(initialState?: Partial<StoreState>) {
       );
     },
 
+    loginWorkbenchAccount(phone: string, password: string): WorkbenchAccount | null {
+      return (
+        state.workbenchAccounts.find((account) => account.phone === phone && account.password === password && !account.disabled) ??
+        null
+      );
+    },
+
     markGenerationCopied(id: string): GenerationRecord | null {
       const record = state.generations.find((item) => item.id === id);
+      if (!record) {
+        return null;
+      }
+      record.copied = true;
+      return record;
+    },
+
+    markWorkbenchGenerationCopied(id: string): WorkbenchGenerationRecord | null {
+      const record = state.workbenchGenerations.find((item) => item.id === id);
       if (!record) {
         return null;
       }
@@ -144,6 +214,26 @@ export function createMockStore(initialState?: Partial<StoreState>) {
       profile.updatedAt = new Date().toISOString();
       return profile;
     },
+
+    updateWorkbenchAccountDisabled(id: string, disabled: boolean): WorkbenchAccount | null {
+      const account = state.workbenchAccounts.find((item) => item.id === id);
+      if (!account) {
+        return null;
+      }
+      account.disabled = disabled;
+      account.updatedAt = new Date().toISOString();
+      return account;
+    },
+
+    updateWorkbenchAccountPassword(id: string, password: string): WorkbenchAccount | null {
+      const account = state.workbenchAccounts.find((item) => item.id === id);
+      if (!account) {
+        return null;
+      }
+      account.password = password;
+      account.updatedAt = new Date().toISOString();
+      return account;
+    },
   };
 }
 
@@ -159,4 +249,10 @@ function matches<T>(expected: T | undefined, actual: T): boolean {
   return expected === undefined || expected === actual;
 }
 
-export const mockStore = createMockStore();
+type GlobalWithMockStore = typeof globalThis & {
+  __hsaMockStore?: ReturnType<typeof createMockStore>;
+};
+
+const globalForMockStore = globalThis as GlobalWithMockStore;
+
+export const mockStore = (globalForMockStore.__hsaMockStore ??= createMockStore());

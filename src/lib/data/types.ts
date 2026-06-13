@@ -77,3 +77,47 @@ export type GenerationFilter = {
   planName?: PlanName;
   storeType?: string;
 };
+
+export type WorkbenchAccountRole = "owner" | "subaccount";
+
+export type WorkbenchAccount = {
+  id: string;
+  phone: string;
+  password: string;
+  role: WorkbenchAccountRole;
+  displayName: string;
+  note: string;
+  disabled: boolean;
+  createdAt: string;
+  updatedAt: string;
+};
+
+export type CreateWorkbenchAccountInput = Omit<WorkbenchAccount, "id" | "createdAt" | "updatedAt">;
+
+export type WorkbenchGenerationType =
+  | "mealbox_video"
+  | "promotion_copy"
+  | "poster_prompt"
+  | "moments_library";
+
+export type WorkbenchGenerationRecord = {
+  id: string;
+  accountId: string;
+  accountPhone: string;
+  accountDisplayName: string;
+  generationType: WorkbenchGenerationType;
+  input: string;
+  output: string;
+  copied: boolean;
+  prompt: string;
+  modelProvider: string;
+  modelName: string;
+  createdAt: string;
+};
+
+export type CreateWorkbenchGenerationInput = Omit<WorkbenchGenerationRecord, "id" | "createdAt">;
+
+export type WorkbenchGenerationFilter = {
+  accountId?: string;
+  generationType?: WorkbenchGenerationType;
+};

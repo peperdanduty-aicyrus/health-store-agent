@@ -1,13 +1,18 @@
-import { seedProfiles } from "./seed";
+import { seedProfiles, seedWorkbenchAccounts } from "./seed";
 import type {
   CreateGenerationInput,
   CreateOpeningApplicationInput,
   CreateUserInput,
+  CreateWorkbenchAccountInput,
+  CreateWorkbenchGenerationInput,
   GenerationFilter,
   GenerationRecord,
   Profile,
   OpeningApplication,
   OpeningApplicationStatus,
+  WorkbenchAccount,
+  WorkbenchGenerationFilter,
+  WorkbenchGenerationRecord,
 } from "./types";
 
 export type D1DatabaseLike = {
@@ -24,10 +29,13 @@ type D1PreparedStatementLike = {
 type ProfileRow = Omit<Profile, "disabled"> & { disabled: number };
 type ApplicationRow = OpeningApplication;
 type GenerationRow = Omit<GenerationRecord, "copied"> & { copied: number };
+type WorkbenchAccountRow = Omit<WorkbenchAccount, "disabled"> & { disabled: number };
+type WorkbenchGenerationRow = Omit<WorkbenchGenerationRecord, "copied"> & { copied: number };
 
 export async function createD1Store(db: D1DatabaseLike) {
   await ensureSchema(db);
   await ensureSeedAdmin(db);
+  await ensureSeedWorkbenchOwner(db);
 
   return {
     async createGeneration(input: CreateGenerationInput): Promise<GenerationRecord> {
@@ -122,6 +130,61 @@ export async function createD1Store(db: D1DatabaseLike) {
       return user;
     },
 
+    async createWorkbenchAccount(input: CreateWorkbenchAccountInput): Promise<WorkbenchAccount> {
+      const now = new Date().toISOString();
+      const account: WorkbenchAccount = {
+        ...input,
+        id: makeId("workbench_account"),
+        createdAt: now,
+        updatedAt: now,
+      };
+
+      await insertWorkbenchAccount(db, account);
+      return account;
+    },
+
+    async createWorkbenchGeneration(input: CreateWorkbenchGenerationInput): Promise<WorkbenchGenerationRecord> {
+      const record: WorkbenchGenerationRecord = {
+        ...input,
+        id: makeId("workbench_generation"),
+        createdAt: new Date().toISOString(),
+      };
+
+      await db
+        .prepare(
+          `INSERT INTO workbench_generations (
+            id, accountId, accountPhone, accountDisplayName, generationType, input,
+            output, copied, prompt, modelProvider, modelName, createdAt
+          ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+        )
+        .bind(
+          record.id,
+          record.accountId,
+          record.accountPhone,
+          record.accountDisplayName,
+          record.generationType,
+          record.input,
+          record.output,
+          record.copied ? 1 : 0,
+          record.prompt,
+          record.modelProvider,
+          record.modelName,
+          record.createdAt,
+        )
+        .run();
+
+      return record;
+    },
+
+    async deleteWorkbenchGeneration(id: string): Promise<boolean> {
+      const existing = await getWorkbenchGenerationById(db, id);
+      if (!existing) {
+        return false;
+      }
+      await db.prepare("DELETE FROM workbench_generations WHERE id = ?").bind(id).run();
+      return true;
+    },
+
     async getGenerationById(id: string): Promise<GenerationRecord | null> {
       return getGenerationById(db, id);
     },
@@ -129,6 +192,15 @@ export async function createD1Store(db: D1DatabaseLike) {
     async getUserById(id: string): Promise<Profile | null> {
       const row = await db.prepare("SELECT * FROM profiles WHERE id = ?").bind(id).first<ProfileRow>();
       return row ? mapProfile(row) : null;
+    },
+
+    async getWorkbenchAccountById(id: string): Promise<WorkbenchAccount | null> {
+      const row = await db.prepare("SELECT * FROM workbench_accounts WHERE id = ?").bind(id).first<WorkbenchAccountRow>();
+      return row ? mapWorkbenchAccount(row) : null;
+    },
+
+    async getWorkbenchGenerationById(id: string): Promise<WorkbenchGenerationRecord | null> {
+      return getWorkbenchGenerationById(db, id);
     },
 
     async listApplications(): Promise<OpeningApplication[]> {
@@ -173,6 +245,35 @@ export async function createD1Store(db: D1DatabaseLike) {
       return results.map(mapProfile);
     },
 
+    async listWorkbenchAccounts(): Promise<WorkbenchAccount[]> {
+      const { results = [] } = await db
+        .prepare("SELECT * FROM workbench_accounts ORDER BY role ASC, createdAt DESC")
+        .all<WorkbenchAccountRow>();
+      return results.map(mapWorkbenchAccount);
+    },
+
+    async listWorkbenchGenerations(filter: WorkbenchGenerationFilter = {}): Promise<WorkbenchGenerationRecord[]> {
+      const conditions: string[] = [];
+      const values: string[] = [];
+
+      if (filter.accountId) {
+        conditions.push("accountId = ?");
+        values.push(filter.accountId);
+      }
+      if (filter.generationType) {
+        conditions.push("generationType = ?");
+        values.push(filter.generationType);
+      }
+
+      const where = conditions.length ? `WHERE ${conditions.join(" AND ")}` : "";
+      const { results = [] } = await db
+        .prepare(`SELECT * FROM workbench_generations ${where} ORDER BY createdAt DESC`)
+        .bind(...values)
+        .all<WorkbenchGenerationRow>();
+
+      return results.map(mapWorkbenchGeneration);
+    },
+
     async login(phone: string, password: string): Promise<Profile | null> {
       const row = await db
         .prepare("SELECT * FROM profiles WHERE phone = ? AND password = ? AND disabled = 0")
@@ -181,9 +282,22 @@ export async function createD1Store(db: D1DatabaseLike) {
       return row ? mapProfile(row) : null;
     },
 
+    async loginWorkbenchAccount(phone: string, password: string): Promise<WorkbenchAccount | null> {
+      const row = await db
+        .prepare("SELECT * FROM workbench_accounts WHERE phone = ? AND password = ? AND disabled = 0")
+        .bind(phone, password)
+        .first<WorkbenchAccountRow>();
+      return row ? mapWorkbenchAccount(row) : null;
+    },
+
     async markGenerationCopied(id: string): Promise<GenerationRecord | null> {
       await db.prepare("UPDATE generations SET copied = 1 WHERE id = ?").bind(id).run();
       return getGenerationById(db, id);
+    },
+
+    async markWorkbenchGenerationCopied(id: string): Promise<WorkbenchGenerationRecord | null> {
+      await db.prepare("UPDATE workbench_generations SET copied = 1 WHERE id = ?").bind(id).run();
+      return getWorkbenchGenerationById(db, id);
     },
 
     async updateGenerationNote(id: string, userNote: string): Promise<GenerationRecord | null> {
@@ -222,6 +336,24 @@ export async function createD1Store(db: D1DatabaseLike) {
       await db.prepare("UPDATE profiles SET password = ?, updatedAt = ? WHERE id = ?").bind(password, new Date().toISOString(), id).run();
       const row = await db.prepare("SELECT * FROM profiles WHERE id = ?").bind(id).first<ProfileRow>();
       return row ? mapProfile(row) : null;
+    },
+
+    async updateWorkbenchAccountDisabled(id: string, disabled: boolean): Promise<WorkbenchAccount | null> {
+      await db
+        .prepare("UPDATE workbench_accounts SET disabled = ?, updatedAt = ? WHERE id = ? AND role = 'subaccount'")
+        .bind(disabled ? 1 : 0, new Date().toISOString(), id)
+        .run();
+      const row = await db.prepare("SELECT * FROM workbench_accounts WHERE id = ?").bind(id).first<WorkbenchAccountRow>();
+      return row ? mapWorkbenchAccount(row) : null;
+    },
+
+    async updateWorkbenchAccountPassword(id: string, password: string): Promise<WorkbenchAccount | null> {
+      await db
+        .prepare("UPDATE workbench_accounts SET password = ?, updatedAt = ? WHERE id = ?")
+        .bind(password, new Date().toISOString(), id)
+        .run();
+      const row = await db.prepare("SELECT * FROM workbench_accounts WHERE id = ?").bind(id).first<WorkbenchAccountRow>();
+      return row ? mapWorkbenchAccount(row) : null;
     },
   };
 }
@@ -297,6 +429,41 @@ async function ensureSchema(db: D1DatabaseLike) {
       )`,
     )
     .run();
+
+  await db
+    .prepare(
+      `CREATE TABLE IF NOT EXISTS workbench_accounts (
+        id TEXT PRIMARY KEY,
+        phone TEXT NOT NULL UNIQUE,
+        password TEXT NOT NULL,
+        role TEXT NOT NULL,
+        displayName TEXT NOT NULL,
+        note TEXT NOT NULL,
+        disabled INTEGER NOT NULL,
+        createdAt TEXT NOT NULL,
+        updatedAt TEXT NOT NULL
+      )`,
+    )
+    .run();
+
+  await db
+    .prepare(
+      `CREATE TABLE IF NOT EXISTS workbench_generations (
+        id TEXT PRIMARY KEY,
+        accountId TEXT NOT NULL,
+        accountPhone TEXT NOT NULL,
+        accountDisplayName TEXT NOT NULL,
+        generationType TEXT NOT NULL,
+        input TEXT NOT NULL,
+        output TEXT NOT NULL,
+        copied INTEGER NOT NULL,
+        prompt TEXT NOT NULL,
+        modelProvider TEXT NOT NULL,
+        modelName TEXT NOT NULL,
+        createdAt TEXT NOT NULL
+      )`,
+    )
+    .run();
 }
 
 async function ensureColumn(db: D1DatabaseLike, tableName: string, columnName: string, definition: string) {
@@ -316,6 +483,18 @@ async function ensureSeedAdmin(db: D1DatabaseLike) {
   const existing = await db.prepare("SELECT id FROM profiles WHERE id = ?").bind(admin.id).first();
   if (!existing) {
     await insertProfile(db, admin);
+  }
+}
+
+async function ensureSeedWorkbenchOwner(db: D1DatabaseLike) {
+  const owner = seedWorkbenchAccounts.find((account) => account.role === "owner");
+  if (!owner || !owner.phone || !owner.password) {
+    return;
+  }
+
+  const existing = await db.prepare("SELECT id FROM workbench_accounts WHERE role = 'owner'").first();
+  if (!existing) {
+    await insertWorkbenchAccount(db, owner);
   }
 }
 
@@ -349,9 +528,38 @@ async function insertProfile(db: D1DatabaseLike, user: Profile) {
     .run();
 }
 
+async function insertWorkbenchAccount(db: D1DatabaseLike, account: WorkbenchAccount) {
+  await db
+    .prepare(
+      `INSERT INTO workbench_accounts (
+        id, phone, password, role, displayName, note, disabled, createdAt, updatedAt
+      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+    )
+    .bind(
+      account.id,
+      account.phone,
+      account.password,
+      account.role,
+      account.displayName,
+      account.note,
+      account.disabled ? 1 : 0,
+      account.createdAt,
+      account.updatedAt,
+    )
+    .run();
+}
+
 async function getGenerationById(db: D1DatabaseLike, id: string): Promise<GenerationRecord | null> {
   const row = await db.prepare("SELECT * FROM generations WHERE id = ?").bind(id).first<GenerationRow>();
   return row ? mapGeneration(row) : null;
+}
+
+async function getWorkbenchGenerationById(db: D1DatabaseLike, id: string): Promise<WorkbenchGenerationRecord | null> {
+  const row = await db
+    .prepare("SELECT * FROM workbench_generations WHERE id = ?")
+    .bind(id)
+    .first<WorkbenchGenerationRow>();
+  return row ? mapWorkbenchGeneration(row) : null;
 }
 
 function mapProfile(row: ProfileRow): Profile {
@@ -362,6 +570,20 @@ function mapProfile(row: ProfileRow): Profile {
 }
 
 function mapGeneration(row: GenerationRow): GenerationRecord {
+  return {
+    ...row,
+    copied: Boolean(row.copied),
+  };
+}
+
+function mapWorkbenchAccount(row: WorkbenchAccountRow): WorkbenchAccount {
+  return {
+    ...row,
+    disabled: Boolean(row.disabled),
+  };
+}
+
+function mapWorkbenchGeneration(row: WorkbenchGenerationRow): WorkbenchGenerationRecord {
   return {
     ...row,
     copied: Boolean(row.copied),

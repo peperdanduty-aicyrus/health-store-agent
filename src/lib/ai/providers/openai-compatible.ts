@@ -26,6 +26,7 @@ export async function generateWithOpenAiCompatibleProvider({
     body: JSON.stringify({
       messages: [{ content: prompt, role: "user" }],
       model,
+      response_format: { type: "json_object" },
       temperature: 0.7,
     }),
     headers: {
@@ -53,4 +54,3 @@ export async function generateWithOpenAiCompatibleProvider({
     provider,
   };
 }
-

@@ -4,24 +4,38 @@ import type {
   CreateGenerationInput,
   CreateOpeningApplicationInput,
   CreateUserInput,
+  CreateWorkbenchAccountInput,
+  CreateWorkbenchGenerationInput,
   GenerationFilter,
   GenerationRecord,
   Profile,
   OpeningApplication,
   OpeningApplicationStatus,
+  WorkbenchAccount,
+  WorkbenchGenerationFilter,
+  WorkbenchGenerationRecord,
 } from "./types";
 
 export type DataStore = {
   createGeneration(input: CreateGenerationInput): Promise<GenerationRecord> | GenerationRecord;
   createOpeningApplication(input: CreateOpeningApplicationInput): Promise<OpeningApplication> | OpeningApplication;
   createUser(input: CreateUserInput): Promise<Profile> | Profile;
+  createWorkbenchAccount(input: CreateWorkbenchAccountInput): Promise<WorkbenchAccount> | WorkbenchAccount;
+  createWorkbenchGeneration(input: CreateWorkbenchGenerationInput): Promise<WorkbenchGenerationRecord> | WorkbenchGenerationRecord;
+  deleteWorkbenchGeneration(id: string): Promise<boolean> | boolean;
   getGenerationById(id: string): Promise<GenerationRecord | null> | GenerationRecord | null;
   getUserById(id: string): Promise<Profile | null> | Profile | null;
+  getWorkbenchAccountById(id: string): Promise<WorkbenchAccount | null> | WorkbenchAccount | null;
+  getWorkbenchGenerationById(id: string): Promise<WorkbenchGenerationRecord | null> | WorkbenchGenerationRecord | null;
   listApplications(): Promise<OpeningApplication[]> | OpeningApplication[];
   listGenerations(filter?: GenerationFilter): Promise<GenerationRecord[]> | GenerationRecord[];
   listUsers(): Promise<Profile[]> | Profile[];
+  listWorkbenchAccounts(): Promise<WorkbenchAccount[]> | WorkbenchAccount[];
+  listWorkbenchGenerations(filter?: WorkbenchGenerationFilter): Promise<WorkbenchGenerationRecord[]> | WorkbenchGenerationRecord[];
   login(phone: string, password: string): Promise<Profile | null> | Profile | null;
+  loginWorkbenchAccount(phone: string, password: string): Promise<WorkbenchAccount | null> | WorkbenchAccount | null;
   markGenerationCopied(id: string): Promise<GenerationRecord | null> | GenerationRecord | null;
+  markWorkbenchGenerationCopied(id: string): Promise<WorkbenchGenerationRecord | null> | WorkbenchGenerationRecord | null;
   updateGenerationNote(id: string, userNote: string): Promise<GenerationRecord | null> | GenerationRecord | null;
   updateOpeningApplicationStatus(
     id: string,
@@ -30,6 +44,8 @@ export type DataStore = {
   ): Promise<OpeningApplication | null> | OpeningApplication | null;
   updateUserDisabled(id: string, disabled: boolean): Promise<Profile | null> | Profile | null;
   updateUserPassword(id: string, password: string): Promise<Profile | null> | Profile | null;
+  updateWorkbenchAccountDisabled(id: string, disabled: boolean): Promise<WorkbenchAccount | null> | WorkbenchAccount | null;
+  updateWorkbenchAccountPassword(id: string, password: string): Promise<WorkbenchAccount | null> | WorkbenchAccount | null;
 };
 
 let d1StorePromise: Promise<DataStore> | null = null;
