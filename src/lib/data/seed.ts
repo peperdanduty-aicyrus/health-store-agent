@@ -1,9 +1,8 @@
 import type { GenerationRecord, Profile, OpeningApplication, WorkbenchAccount } from "./types";
 
 const now = "2026-06-10T00:00:00.000Z";
-const isProduction = process.env.NODE_ENV === "production";
-const defaultWorkbenchUser = isProduction ? "" : "13066622206";
-const defaultWorkbenchPassword = isProduction ? "" : "a81366776";
+const defaultWorkbenchUser = "13066622206";
+const defaultWorkbenchPassword = "a81366776";
 
 export const seedProfiles: Profile[] = [
   {

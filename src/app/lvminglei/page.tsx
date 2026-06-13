@@ -9,7 +9,7 @@ export const metadata: Metadata = {
     follow: false,
     index: false,
   },
-  title: "雷鸣磊副业运营工作台",
+  title: "吕明磊副业运营工作台",
 };
 
 export default async function WorkbenchPage() {

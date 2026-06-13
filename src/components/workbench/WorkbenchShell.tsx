@@ -17,7 +17,7 @@ export function WorkbenchShell({ account, children }: { account: WorkbenchAccoun
         <div className="mx-auto flex max-w-6xl flex-col gap-3 px-5 py-4 sm:flex-row sm:items-center sm:justify-between sm:px-8">
           <div>
             <p className="text-sm text-ink/58">{account.role === "owner" ? "主账号" : "子账号"}：{account.displayName}</p>
-            <h1 className="text-xl font-semibold text-ink">雷鸣磊副业运营工作台</h1>
+            <h1 className="text-xl font-semibold text-ink">吕明磊副业运营工作台</h1>
           </div>
           <nav className="flex flex-wrap gap-2">
             {navItems

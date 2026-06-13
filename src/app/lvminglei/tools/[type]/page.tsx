@@ -13,7 +13,7 @@ export const metadata: Metadata = {
     follow: false,
     index: false,
   },
-  title: "内容生成｜雷鸣磊副业运营工作台",
+  title: "内容生成｜吕明磊副业运营工作台",
 };
 
 export default async function WorkbenchToolPage({

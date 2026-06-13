@@ -12,7 +12,7 @@ export function WorkbenchLoginForm() {
 
   return (
     <form action={action} className="rounded-lg border border-ink/10 bg-white p-5 shadow-sm">
-      <h1 className="text-2xl font-semibold text-ink">雷鸣磊副业运营工作台</h1>
+      <h1 className="text-2xl font-semibold text-ink">吕明磊副业运营工作台</h1>
       <p className="mt-2 text-sm leading-6 text-ink/62">私用工具，不开放注册。请使用工作台账号登录。</p>
       <label className="mt-5 block text-sm font-medium text-ink/75">
         账号
