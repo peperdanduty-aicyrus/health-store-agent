@@ -54,6 +54,13 @@ describe("sensitive word scanner", () => {
     expect(result.replacements).toEqual([{ from: "私信我", to: "留言" }]);
   });
 
+  it("keeps natural first-glance wording readable", () => {
+    const result = replaceSensitiveWords("客户点进去第一眼，不知道你主推什么。");
+
+    expect(result.content).toBe("客户点进去第一眼，不知道你主推什么。");
+    expect(result.replacements).toEqual([]);
+  });
+
   it("replaces guarantee-like satisfaction promises", () => {
     const result = replaceSensitiveWords("需要体检的留言，4.9元包你满意。");
 
