@@ -95,6 +95,40 @@ describe("mock data store", () => {
     });
   });
 
+  it("deletes an opening application without deleting the created user", () => {
+    const store = createMockStore();
+    const application = store.createOpeningApplication({
+      cityArea: "北京朝阳",
+      contactName: "王店长",
+      interestedFeatures: "小红书文案、私域成交话术",
+      note: "准备开通",
+      phone: "13922223333",
+      storeName: "同世堂中医馆",
+      storeType: "中医馆 / 中医诊所",
+      wechatId: "wang-account",
+    });
+    const user = store.createUser({
+      cityArea: application.cityArea,
+      dailyLimit: 5,
+      disabled: false,
+      expiresAt: "2026-06-13",
+      mainProjects: application.note,
+      memberStatus: "paid",
+      password: "initial123",
+      phone: application.phone,
+      planName: "temporary_opening",
+      role: "user",
+      storeAdvantages: application.wechatId,
+      storeName: application.storeName,
+      storeType: application.storeType,
+    });
+
+    expect(store.deleteOpeningApplication(application.id)).toBe(true);
+    expect(store.listApplications()).not.toContainEqual(application);
+    expect(store.getUserById(user.id)).toMatchObject({ id: user.id, phone: application.phone });
+    expect(store.deleteOpeningApplication("missing")).toBe(false);
+  });
+
   it("blocks disabled users from logging in until re-enabled", () => {
     const store = createMockStore();
     const user = store.createUser({
@@ -233,5 +267,69 @@ describe("mock data store", () => {
       result: "建议到店评估",
     });
     expect(store.getGenerationById("missing")).toBeNull();
+  });
+
+  it("deletes one generation record and can clear all generation records", () => {
+    const store = createMockStore();
+    const user = store.createUser({
+      cityArea: "上海浦东",
+      dailyLimit: 30,
+      disabled: false,
+      expiresAt: "2026-07-10",
+      mainProjects: "洁牙、儿童涂氟",
+      memberStatus: "paid",
+      password: "initial123",
+      phone: "13911112222",
+      planName: "standard_monthly",
+      role: "user",
+      storeAdvantages: "社区老客多",
+      storeName: "真如口腔",
+      storeType: "口腔门诊",
+    });
+    const first = store.createGeneration({
+      copied: false,
+      extraInfo: "",
+      generationType: "moments",
+      modelName: "mock-health-copywriter",
+      modelProvider: "mock",
+      phone: user.phone,
+      planName: user.planName,
+      projectName: "肩颈调理",
+      prompt: "生成朋友圈文案",
+      purpose: "引流咨询",
+      result: "建议到店评估",
+      sensitiveCheckResult: "未发现明显高风险表达",
+      storeName: user.storeName,
+      storeType: user.storeType,
+      targetCustomer: "上班族",
+      userId: user.id,
+      userNote: "",
+    });
+    const second = store.createGeneration({
+      copied: false,
+      extraInfo: "",
+      generationType: "douyin_kuaishou",
+      modelName: "mock-health-copywriter",
+      modelProvider: "mock",
+      phone: user.phone,
+      planName: user.planName,
+      projectName: "洁牙",
+      prompt: "生成抖音/快手文案",
+      purpose: "提高咨询",
+      result: "短视频标题",
+      sensitiveCheckResult: "未发现明显高风险表达",
+      storeName: user.storeName,
+      storeType: user.storeType,
+      targetCustomer: "附近居民",
+      userId: user.id,
+      userNote: "",
+    });
+
+    expect(store.deleteGeneration(first.id)).toBe(true);
+    expect(store.getGenerationById(first.id)).toBeNull();
+    expect(store.listGenerations({ userId: user.id })).toEqual([second]);
+    expect(store.deleteGeneration("missing")).toBe(false);
+    expect(store.deleteAllGenerations()).toBe(1);
+    expect(store.listGenerations()).toEqual([]);
   });
 });

@@ -39,4 +39,18 @@ describe("scene prompt builder", () => {
 
     expect(prompt).not.toContain("sensitiveCheck");
   });
+
+  it("builds a compliant douyin/kuaishou short-video prompt structure", () => {
+    const prompt = buildScenePrompt("douyin_kuaishou", storeProfile, input);
+
+    expect(prompt).toContain("抖音/快手文案");
+    expect(prompt).toContain("短视频标题");
+    expect(prompt).toContain("15 秒短视频脚本");
+    expect(prompt).toContain("30 秒短视频脚本");
+    expect(prompt).toContain("口播文案");
+    expect(prompt).toContain("视频字幕版文案");
+    expect(prompt).toContain("评论区引导话术");
+    expect(prompt).toContain("根治、治愈、保证有效、最有效、第一、百分百、永久、无副作用、包好、神医、祖传秘方");
+    expect(prompt).toContain("抖音/快手文案场景不要输出任何 # 标签");
+  });
 });

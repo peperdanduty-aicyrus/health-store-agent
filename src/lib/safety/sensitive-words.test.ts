@@ -60,4 +60,11 @@ describe("sensitive word scanner", () => {
     expect(result.content).toBe("需要体检的留言，4.9元体验后再判断是否适合。");
     expect(result.replacements).toEqual([{ from: "包你满意", to: "体验后再判断是否适合" }]);
   });
+
+  it("detects added short-video medical promise risk terms", () => {
+    const result = scanSensitiveWords("这个项目保证有效，百分百适合，做完永久舒服。");
+
+    expect(result.detectedWords).toEqual(["保证有效", "百分百", "永久"]);
+    expect(result.hasRisk).toBe(true);
+  });
 });

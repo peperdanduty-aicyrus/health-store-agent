@@ -88,6 +88,24 @@ export function createMockStore(initialState?: Partial<StoreState>) {
       return record;
     },
 
+    deleteAllGenerations(): number {
+      const deletedCount = state.generations.length;
+      state.generations = [];
+      return deletedCount;
+    },
+
+    deleteGeneration(id: string): boolean {
+      const originalLength = state.generations.length;
+      state.generations = state.generations.filter((record) => record.id !== id);
+      return state.generations.length !== originalLength;
+    },
+
+    deleteOpeningApplication(id: string): boolean {
+      const originalLength = state.applications.length;
+      state.applications = state.applications.filter((application) => application.id !== id);
+      return state.applications.length !== originalLength;
+    },
+
     deleteWorkbenchGeneration(id: string): boolean {
       const originalLength = state.workbenchGenerations.length;
       state.workbenchGenerations = state.workbenchGenerations.filter((record) => record.id !== id);

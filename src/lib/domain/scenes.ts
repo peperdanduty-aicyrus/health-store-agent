@@ -17,9 +17,11 @@ export const sceneDefinitions = {
   private_domain: {
     label: "私域成交话术",
   },
+  douyin_kuaishou: {
+    label: "抖音/快手文案",
+  },
 } as const;
 
 export type SceneKey = keyof typeof sceneDefinitions;
 
 export const allSceneKeys = Object.keys(sceneDefinitions) as SceneKey[];
-

@@ -87,6 +87,38 @@ function buildMockSceneBody(scene: SceneKey, storeProfile: StoreProfileForPrompt
     };
   }
 
+  if (scene === "douyin_kuaishou") {
+    return {
+      commentGuides: [
+        "想看附近门店怎么选，可以在评论区说一下。",
+        "有类似不适感可以先了解，不建议盲目办卡。",
+        "想了解门店活动，可以留言说项目名称。",
+        "不确定是否适合，可以先把大概情况说清楚。",
+        "到店前建议先问清楚流程、时间和注意事项。",
+      ],
+      script15: {
+        endingGuide: "结尾提醒先咨询是否适合，再预约到店体验。",
+        middleDisplay: `展示${storeProfile.storeName}的环境、服务流程和${input.projectName}准备细节。`,
+        opening3Seconds: `${input.targetCustomer}最近如果总觉得状态紧，可以先了解这个日常养护项目。`,
+      },
+      script30: {
+        spokenCopy: `${input.targetCustomer}如果想了解${input.projectName}，建议先看门店环境、流程和沟通是否清楚。我们会先了解基础情况，再建议是否适合到店体验。具体感受因人而异，以实际体验为准。`,
+        subtitleSuggestions: ["先了解，再决定", `${input.projectName}日常养护参考`, "到店前建议先咨询"],
+        visualSuggestions: ["门店门头和接待区", "项目准备过程", "店员和顾客沟通细节"],
+      },
+      sensitiveCheck: [],
+      spokenCopy: `${input.projectName}不是每个人都要马上安排，先把自己的情况说清楚，再看是否适合到店了解。我们更希望你明明白白体验，不要冲动办卡。`,
+      subtitleCopy: [`${input.projectName}先别急着办卡`, "先问清楚适不适合", "流程、时间、注意事项都要了解", "实际体验因人而异", "需要的话可以先留言咨询"].join("\n"),
+      videoTitles: [
+        `${input.projectName}到店前先问这 3 点`,
+        `${input.targetCustomer}可以先了解的日常养护项目`,
+        `${storeProfile.storeType}老板常被问的问题`,
+        `${input.projectName}体验前的小提醒`,
+        "附近门店别急着选，先看流程清不清楚",
+      ],
+    };
+  }
+
   return {
     followUp: "如果方便，可以先说下大概情况，我们再判断是否适合到店。",
     replies: [

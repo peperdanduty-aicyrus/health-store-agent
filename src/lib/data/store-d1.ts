@@ -176,6 +176,30 @@ export async function createD1Store(db: D1DatabaseLike) {
       return record;
     },
 
+    async deleteAllGenerations(): Promise<number> {
+      const countRow = await db.prepare("SELECT COUNT(*) as count FROM generations").first<{ count: number }>();
+      await db.prepare("DELETE FROM generations").run();
+      return Number(countRow?.count ?? 0);
+    },
+
+    async deleteGeneration(id: string): Promise<boolean> {
+      const existing = await getGenerationById(db, id);
+      if (!existing) {
+        return false;
+      }
+      await db.prepare("DELETE FROM generations WHERE id = ?").bind(id).run();
+      return true;
+    },
+
+    async deleteOpeningApplication(id: string): Promise<boolean> {
+      const existing = await db.prepare("SELECT id FROM applications WHERE id = ?").bind(id).first<{ id: string }>();
+      if (!existing) {
+        return false;
+      }
+      await db.prepare("DELETE FROM applications WHERE id = ?").bind(id).run();
+      return true;
+    },
+
     async deleteWorkbenchGeneration(id: string): Promise<boolean> {
       const existing = await getWorkbenchGenerationById(db, id);
       if (!existing) {

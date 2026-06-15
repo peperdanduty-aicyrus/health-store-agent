@@ -51,6 +51,8 @@ export function getOutputStructure(scene: SceneKey): string {
       '{"reviews":["好评文案1","好评文案2","好评文案3","好评文案4","好评文案5"]}',
     private_domain:
       '{"replies":[{"question":"顾客问题1","answer":"回复话术1"},{"question":"顾客问题2","answer":"回复话术2"}],"followUp":"后续跟进话术"}',
+    douyin_kuaishou:
+      '{"videoTitles":["短视频标题1","短视频标题2","短视频标题3","短视频标题4","短视频标题5"],"script15":{"opening3Seconds":"开头3秒怎么吸引人","middleDisplay":"中间怎么展示项目或门店","endingGuide":"结尾怎么引导咨询或到店"},"script30":{"visualSuggestions":["画面建议1","画面建议2","画面建议3"],"spokenCopy":"30秒口播文案","subtitleSuggestions":["字幕建议1","字幕建议2","字幕建议3"]},"spokenCopy":"像真人说话的口播文案","subtitleCopy":"适合直接复制到剪映字幕里的文案","commentGuides":["评论区引导话术1","评论区引导话术2","评论区引导话术3","评论区引导话术4","评论区引导话术5"]}',
   };
 
   return structures[scene];
@@ -59,6 +61,18 @@ export function getOutputStructure(scene: SceneKey): string {
 function getSceneTagRule(scene: SceneKey): string {
   if (scene === "xiaohongshu") {
     return "小红书规则：标签最多 6 个，标签只允许出现在 tags 字段，正文、标题和封面文字中不要穿插 # 标签。";
+  }
+
+  if (scene === "douyin_kuaishou") {
+    return [
+      "抖音/快手规则：短视频标题 5 个，适合本地生活平台，不夸大，不违规，有真实门店感。",
+      "脚本要求：15 秒短视频脚本必须包含开头 3 秒、中间展示和结尾引导；30 秒短视频脚本必须包含画面建议、口播文案和字幕建议。",
+      "口播要求：像真人说话，不要太广告，不要太官方；视频字幕版文案要适合直接复制到剪映字幕里。",
+      "评论区要求：输出 5 条评论区引导话术，避免强迫成交和虚假承诺。",
+      "合规要求：医疗健康相关内容不能出现夸大承诺，避免使用根治、治愈、保证有效、最有效、第一、百分百、永久、无副作用、包好、神医、祖传秘方等敏感词。",
+      "安全表达：优先使用调理、改善体验、缓解不适感、日常养护、辅助放松、适合了解、建议到店咨询、以实际体验为准。",
+      "抖音/快手文案场景不要输出任何 # 标签。",
+    ].join("\n");
   }
 
   const sceneLabel = scene === "moments" ? "朋友圈" : sceneDefinitions[scene].label;

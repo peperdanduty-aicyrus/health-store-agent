@@ -39,6 +39,11 @@ export type PasswordFormState = {
   success: boolean;
 };
 
+export type DeleteActionState = {
+  message: string;
+  success: boolean;
+};
+
 const requiredFields = ["storeName", "storeType", "phone"];
 
 export async function submitOpeningApplication(
@@ -220,6 +225,81 @@ export async function resetCustomerPassword(
   revalidatePath("/cyrus/users");
   revalidatePath(`/cyrus/users/${userId}`);
   return { message: "客户密码已重置。", success: true };
+}
+
+export async function deleteOpeningApplication(
+  _previousState: DeleteActionState,
+  formData: FormData,
+): Promise<DeleteActionState> {
+  const admin = await requireAdminProfile();
+  if (!admin) {
+    return { message: "请先登录管理员后台。", success: false };
+  }
+
+  const applicationId = String(formData.get("applicationId") || "");
+  if (!applicationId) {
+    return { message: "删除失败，请稍后重试。", success: false };
+  }
+
+  try {
+    const deleted = await (await getDataStore()).deleteOpeningApplication(applicationId);
+    if (!deleted) {
+      return { message: "删除失败，请稍后重试。", success: false };
+    }
+  } catch {
+    return { message: "删除失败，请稍后重试。", success: false };
+  }
+
+  revalidatePath("/cyrus");
+  revalidatePath("/cyrus/applications");
+  return { message: "开通申请已删除。", success: true };
+}
+
+export async function deleteGenerationRecord(
+  _previousState: DeleteActionState,
+  formData: FormData,
+): Promise<DeleteActionState> {
+  const admin = await requireAdminProfile();
+  if (!admin) {
+    return { message: "请先登录管理员后台。", success: false };
+  }
+
+  const generationId = String(formData.get("generationId") || "");
+  if (!generationId) {
+    return { message: "删除失败，请稍后重试。", success: false };
+  }
+
+  try {
+    const deleted = await (await getDataStore()).deleteGeneration(generationId);
+    if (!deleted) {
+      return { message: "删除失败，请稍后重试。", success: false };
+    }
+  } catch {
+    return { message: "删除失败，请稍后重试。", success: false };
+  }
+
+  revalidatePath("/cyrus");
+  revalidatePath("/cyrus/generations");
+  return { message: "生成记录已删除。", success: true };
+}
+
+export async function deleteAllGenerationRecords(
+  _previousState: DeleteActionState,
+  _formData: FormData,
+): Promise<DeleteActionState> {
+  const admin = await requireAdminProfile();
+  if (!admin) {
+    return { message: "请先登录管理员后台。", success: false };
+  }
+
+  try {
+    await (await getDataStore()).deleteAllGenerations();
+  } catch {
+    return { message: "删除失败，请稍后重试。", success: false };
+  }
+  revalidatePath("/cyrus");
+  revalidatePath("/cyrus/generations");
+  return { message: "全部生成记录已删除。", success: true };
 }
 
 export async function changeOwnPassword(

@@ -20,12 +20,13 @@ const scenes = [
   ["美团 / 点评团单", "生成团单标题、副标题、项目亮点、适合人群和购买须知。"],
   ["好评回复 / 好评参考", "生成自然、真实、不夸大的好评参考和商家回复。"],
   ["私域成交话术", "生成微信咨询、预约引导、老客回访、活动转化等沟通话术。"],
+  ["抖音/快手短视频文案", "生成短视频标题、15 秒和 30 秒脚本、口播、字幕和评论区引导。"],
 ];
 
 const plans = [
   ["基础月卡", "19 元 / 月", "小红书、朋友圈、公众号，每天 30 次"],
-  ["标准月卡", "39 元 / 月", "全部 6 个功能，每天 30 次"],
-  ["正式年卡", "168 元 / 年", "全部 6 个功能，每天 30 次"],
+  ["标准月卡", "39 元 / 月", "全部 7 个功能，每天 30 次"],
+  ["正式年卡", "168 元 / 年", "全部 7 个功能，每天 30 次"],
   ["代运营陪跑", "面议", "账号诊断、内容规划、人工交付支持"],
 ];
 
@@ -79,7 +80,7 @@ export default function Home() {
             本地健康门店 AI 获客文案助手
           </h1>
           <p className="mt-5 max-w-2xl text-lg leading-8 text-ink/72">
-            帮中医馆、推拿馆、口腔门诊、健康管理中心、宠物医院，快速生成小红书、朋友圈、公众号、美团点评、好评回复和私域成交话术。
+            帮中医馆、推拿馆、口腔门诊、健康管理中心、宠物医院，快速生成小红书、朋友圈、公众号、美团点评、好评回复、私域成交和抖音/快手短视频文案。
           </p>
           <p className="mt-4 max-w-2xl text-base font-medium leading-7 text-moss">
             先免费试用，满意后再决定是否开通正式套餐。
@@ -140,7 +141,7 @@ export default function Home() {
       <section className="mx-auto max-w-6xl px-5 py-10 sm:px-8" id="features">
         <div className="flex flex-col gap-2">
           <p className="text-sm font-semibold text-coral">核心功能</p>
-          <h2 className="text-2xl font-semibold text-ink">6 个高频获客内容场景</h2>
+          <h2 className="text-2xl font-semibold text-ink">7 个高频获客内容场景</h2>
         </div>
         <div className="mt-6 grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
           {scenes.map(([scene, detail]) => (

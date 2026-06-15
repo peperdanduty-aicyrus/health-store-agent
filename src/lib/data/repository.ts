@@ -22,6 +22,9 @@ export type DataStore = {
   createUser(input: CreateUserInput): Promise<Profile> | Profile;
   createWorkbenchAccount(input: CreateWorkbenchAccountInput): Promise<WorkbenchAccount> | WorkbenchAccount;
   createWorkbenchGeneration(input: CreateWorkbenchGenerationInput): Promise<WorkbenchGenerationRecord> | WorkbenchGenerationRecord;
+  deleteAllGenerations(): Promise<number> | number;
+  deleteGeneration(id: string): Promise<boolean> | boolean;
+  deleteOpeningApplication(id: string): Promise<boolean> | boolean;
   deleteWorkbenchGeneration(id: string): Promise<boolean> | boolean;
   getGenerationById(id: string): Promise<GenerationRecord | null> | GenerationRecord | null;
   getUserById(id: string): Promise<Profile | null> | Profile | null;
