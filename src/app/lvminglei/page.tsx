@@ -31,7 +31,7 @@ export default async function WorkbenchPage() {
         <p className="text-sm font-semibold text-coral">私用工具</p>
         <h2 className="mt-1 text-2xl font-semibold text-ink">今天要生成什么内容？</h2>
         <p className="mt-2 text-sm leading-6 text-ink/62">
-          用于生成小饭盒系列视频脚本、代运营宣传文案、朋友圈长期宣传文案、海报文案和 AI 作图提示词。
+          用于生成午休门店体检视频脚本、代运营宣传文案、朋友圈长期宣传文案、海报文案和 AI 作图提示词。
         </p>
       </section>
       <WorkbenchToolGrid />

@@ -46,11 +46,8 @@ export function WorkbenchHistoryList({
           <article className="rounded-lg border border-ink/10 bg-white p-5 shadow-sm" key={record.id}>
             <div className="flex flex-col gap-2 sm:flex-row sm:items-start sm:justify-between">
               <div>
-                <p className="font-semibold text-ink">{workbenchToolDefinitions[record.generationType].label}</p>
-                <p className="mt-1 text-xs text-ink/50">
-                  {new Date(record.createdAt).toLocaleString("zh-CN")} / {record.modelProvider}:{record.modelName}
-                  {account.role === "owner" ? ` / ${record.accountDisplayName}` : ""}
-                </p>
+                <p className="font-semibold text-ink">功能类型：{workbenchToolDefinitions[record.generationType].label}</p>
+                <HistoryMeta account={account} record={record} />
               </div>
               <div className="flex flex-wrap gap-2">
                 <Link
@@ -79,14 +76,68 @@ export function WorkbenchHistoryList({
   );
 }
 
+function HistoryMeta({ account, record }: { account: WorkbenchAccount; record: WorkbenchGenerationRecord }) {
+  const input = parseInput(record.input);
+  const items = [
+    ["使用场景", input.usageScene],
+    ["发布平台", input.publishPlatform || input.targetPlatform],
+    ["价格露出方式", input.priceExposure],
+    ["生成时间", new Date(record.createdAt).toLocaleString("zh-CN")],
+    ["使用模型", `${record.modelProvider}:${record.modelName}`],
+    account.role === "owner" ? ["账号", record.accountDisplayName] : null,
+  ].filter(Boolean) as string[][];
+
+  return (
+    <div className="mt-2 flex flex-wrap gap-2">
+      {items.map(([label, value]) => (
+        <span className="rounded-md border border-ink/10 bg-paper px-2.5 py-1 text-xs text-ink/58" key={label}>
+          {label}：{value}
+        </span>
+      ))}
+    </div>
+  );
+}
+
 function formatInput(input: string): string {
-  try {
-    const parsed = JSON.parse(input) as Record<string, string>;
+  const parsed = parseInput(input);
+  if (Object.keys(parsed).length > 0) {
     return Object.entries(parsed)
       .filter(([, value]) => value)
-      .map(([key, value]) => `${key}：${value}`)
+      .map(([key, value]) => `${inputLabelFor(key)}：${value}`)
       .join("\n");
-  } catch {
-    return input;
   }
+  return input;
+}
+
+function parseInput(input: string): Record<string, string> {
+  try {
+    return JSON.parse(input) as Record<string, string>;
+  } catch {
+    return {};
+  }
+}
+
+function inputLabelFor(key: string): string {
+  const labels: Record<string, string> = {
+    contentStyle: "内容风格",
+    corePain: "核心痛点",
+    customerPain: "客户痛点",
+    designStyle: "设计风格",
+    extraInfo: "补充信息",
+    mainContent: "主推内容",
+    mealDescription: "今日饭菜描述",
+    posterCategory: "海报类别",
+    priceExposure: "价格露出方式",
+    product: "推广产品",
+    publishGoal: "发布目的",
+    publishPlatform: "发布平台",
+    storeIssue: "店铺主要问题",
+    storeType: "店铺行业",
+    targetCustomer: "目标客户",
+    targetPlatform: "检查平台",
+    topic: "宣传主题",
+    usageScene: "使用场景",
+  };
+
+  return labels[key] ?? key;
 }

@@ -8,6 +8,7 @@ import { workbenchSessionCookieName, requireWorkbenchAccount, requireWorkbenchOw
 import { getDataStore } from "@/lib/data/repository";
 import type { WorkbenchGenerationType } from "@/lib/data/types";
 import { workbenchToolDefinitions } from "@/lib/domain/workbench";
+import { sanitizeWorkbenchOutputForPrice } from "@/lib/prompts/workbench";
 import { replaceSensitiveWords } from "@/lib/safety/sensitive-words";
 
 export type WorkbenchLoginState = {
@@ -21,6 +22,7 @@ export type WorkbenchActionState = {
 
 export type WorkbenchGenerationState = WorkbenchActionState & {
   generationId?: string;
+  inputSummary?: Record<string, string>;
   result?: string;
 };
 
@@ -150,7 +152,8 @@ export async function generateWorkbench(
   ) as Record<string, string>;
 
   const generated = await generateWorkbenchContent({ input, type });
-  const safeResult = replaceSensitiveWords(generated.content);
+  const priceSafeContent = sanitizeWorkbenchOutputForPrice(generated.content, input);
+  const safeResult = replaceSensitiveWords(priceSafeContent);
   const record = await (await getDataStore()).createWorkbenchGeneration({
     accountDisplayName: account.displayName,
     accountId: account.id,
@@ -167,6 +170,7 @@ export async function generateWorkbench(
   revalidatePath("/lvminglei/history");
   return {
     generationId: record.id,
+    inputSummary: pickInputSummary(input),
     message:
       safeResult.replacements.length > 0
         ? `已生成，并自动替换风险表达：${safeResult.replacements.map((item) => `${item.from}→${item.to}`).join("、")}。`
@@ -206,4 +210,13 @@ export async function deleteWorkbenchGeneration(formData: FormData): Promise<voi
 
   await store.deleteWorkbenchGeneration(generationId);
   revalidatePath("/lvminglei/history");
+}
+
+function pickInputSummary(input: Record<string, string>): Record<string, string> {
+  return {
+    priceExposure: input.priceExposure || "",
+    publishPlatform: input.publishPlatform || "",
+    targetPlatform: input.targetPlatform || "",
+    usageScene: input.usageScene || "",
+  };
 }

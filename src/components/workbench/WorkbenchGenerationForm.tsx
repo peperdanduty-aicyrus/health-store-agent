@@ -27,7 +27,7 @@ export function WorkbenchGenerationForm({
       <input name="type" type="hidden" value={type} />
       <div className="grid gap-3 sm:grid-cols-2">
         {fields.map((field) => (
-          <Field defaultValue={initialValues[field.name] || ""} field={field} key={field.name} />
+          <Field defaultValue={initialValues[field.name] || field.defaultValue || ""} field={field} key={field.name} />
         ))}
       </div>
       <button className="mt-5 min-h-12 rounded-md bg-ink px-5 py-3 font-medium text-white disabled:opacity-60" disabled={pending} type="submit">
@@ -36,7 +36,7 @@ export function WorkbenchGenerationForm({
       {state.message ? (
         <p className={`mt-4 rounded-md p-3 text-sm ${state.success ? "bg-moss/10 text-moss" : "bg-coral/10 text-coral"}`}>{state.message}</p>
       ) : null}
-      {state.result ? <WorkbenchStructuredResult content={state.result} generationId={state.generationId} /> : null}
+      {state.result ? <WorkbenchStructuredResult content={state.result} generationId={state.generationId} inputSummary={state.inputSummary} /> : null}
     </form>
   );
 }

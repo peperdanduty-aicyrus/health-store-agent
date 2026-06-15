@@ -1,7 +1,8 @@
 import { describe, expect, it } from "vitest";
 import { generateWorkbenchContent } from "../ai/provider";
 import { createMockStore } from "../data/store";
-import { buildWorkbenchPrompt } from "../prompts/workbench";
+import { workbenchFieldDefinitions, workbenchToolDefinitions } from "../domain/workbench";
+import { buildWorkbenchPrompt, getWorkbenchOutputStructure, sanitizeWorkbenchOutputForPrice } from "../prompts/workbench";
 
 const mealboxInput = {
   contentStyle: "真实接地气",
@@ -11,6 +12,17 @@ const mealboxInput = {
   storeIssue: "页面没有信任感",
   storeType: "中医馆",
   targetPlatform: "美团",
+};
+
+const posterInput = {
+  corePain: "页面乱，客户看不懂",
+  designStyle: "真实接地气",
+  extraInfo: "",
+  mainContent: "基础体检",
+  posterCategory: "网站/代运营推广",
+  priceExposure: "不显示具体价格",
+  targetCustomer: "中医馆老板",
+  usageScene: "朋友圈海报",
 };
 
 describe("workbench store", () => {
@@ -108,16 +120,93 @@ describe("workbench store", () => {
 });
 
 describe("workbench prompt and provider", () => {
-  it("builds a JSON-only mealbox prompt with the required output modules", () => {
+  it("renames mealbox to the noon store audit video assistant", () => {
+    expect(workbenchToolDefinitions.mealbox_video).toMatchObject({
+      label: "午休门店体检视频助手",
+      description: "生成“医院午休 + 本地门店线上体检”短视频脚本。",
+    });
+  });
+
+  it("builds a JSON-only noon audit video prompt with shooting modules", () => {
     const prompt = buildWorkbenchPrompt("mealbox_video", mealboxInput);
 
-    expect(prompt).toContain("小饭盒视频助手");
+    expect(prompt).toContain("午休门店体检视频助手");
     expect(prompt).toContain("只输出一个合法 JSON 对象");
     expect(prompt).toContain("不要使用 Markdown 符号");
     expect(prompt).toContain("不要输出 # 标签");
-    expect(prompt).toContain("douyinTitles");
+    expect(prompt).toContain("storyboard");
+    expect(prompt).toContain("screenRecordingScript");
     expect(prompt).toContain("pinnedComments");
+    expect(prompt).toContain("不要一开头就卖服务");
     expect(prompt).toContain("不要承诺固定订单、固定曝光、保证成交");
+  });
+
+  it("limits poster output to the selected usage scene and structured image prompts", () => {
+    const prompt = buildWorkbenchPrompt("poster_prompt", posterInput);
+    const structure = getWorkbenchOutputStructure("poster_prompt");
+
+    expect(prompt).toContain("只输出当前使用场景的排版建议");
+    expect(prompt).toContain("朋友圈海报");
+    expect(structure).toContain("posterCopySets");
+    expect(structure).toContain("layoutAdvice");
+    expect(structure).toContain("imagePrompts");
+    expect(structure).toContain("visualSubject");
+    expect(structure).not.toContain("douyinLayout");
+    expect(structure).not.toContain("xiaohongshuLayout");
+    expect(structure).not.toContain("xianyuLayout");
+    expect(structure).not.toContain("momentsLayout");
+  });
+
+  it("adds price exposure fields with useful defaults", () => {
+    expect(workbenchFieldDefinitions.promotion_copy).toEqual(
+      expect.arrayContaining([expect.objectContaining({ defaultValue: "根据补充信息决定", name: "priceExposure" })]),
+    );
+    expect(workbenchFieldDefinitions.poster_prompt).toEqual(
+      expect.arrayContaining([expect.objectContaining({ defaultValue: "根据补充信息决定", name: "priceExposure" })]),
+    );
+    expect(workbenchFieldDefinitions.moments_library).toEqual(
+      expect.arrayContaining([expect.objectContaining({ defaultValue: "根据补充信息决定", name: "priceExposure" })]),
+    );
+    expect(workbenchFieldDefinitions.mealbox_video).toEqual(
+      expect.arrayContaining([expect.objectContaining({ defaultValue: "不显示具体价格", name: "priceExposure" })]),
+    );
+  });
+
+  it("keeps prices out of xiaohongshu promotion prompts unless explicitly requested", () => {
+    const prompt = buildWorkbenchPrompt("promotion_copy", {
+      customerPain: "页面乱",
+      extraInfo: "",
+      priceExposure: "根据补充信息决定",
+      product: "4.9 元基础体检",
+      publishPlatform: "小红书",
+      targetCustomer: "中医馆老板",
+    });
+
+    expect(prompt).toContain("小红书默认不要出现具体价格");
+    expect(prompt).toContain("不要在输出中出现 4.9、69、39");
+    expect(prompt).toContain("不要一篇文案同时塞 4.9、69、39、代运营、AI工具");
+  });
+
+  it("removes explicit yuan amounts when price exposure hides prices", () => {
+    const output = sanitizeWorkbenchOutputForPrice(
+      '{"text":"基础体检——0元诊断你的线上页面问题，后续可以做 69 元全面体检，也可以试用 39元 AI 工具。比例：9:16。"}',
+      { priceExposure: "不显示具体价格" },
+    );
+
+    expect(output).not.toContain("0元");
+    expect(output).not.toContain("69 元");
+    expect(output).not.toContain("39元");
+    expect(output).toContain("比例：9:16");
+  });
+
+  it("splits promotion and moments output into human and conversion versions", () => {
+    expect(getWorkbenchOutputStructure("promotion_copy")).toContain("momentsHumanPosts");
+    expect(getWorkbenchOutputStructure("promotion_copy")).toContain("momentsConversionPosts");
+    expect(getWorkbenchOutputStructure("promotion_copy")).toContain("xiaohongshuSoftPost");
+    expect(getWorkbenchOutputStructure("promotion_copy")).toContain("shortVideoLifeScript");
+    expect(getWorkbenchOutputStructure("moments_library")).toContain("dailyRecordPosts");
+    expect(getWorkbenchOutputStructure("moments_library")).toContain("problemObservationPosts");
+    expect(getWorkbenchOutputStructure("moments_library")).toContain("softPromotionPosts");
   });
 
   it("generates mock workbench content without requiring an API key", async () => {
@@ -131,9 +220,29 @@ describe("workbench prompt and provider", () => {
     expect(result.model).toBe("mock-workbench-copywriter");
     expect(result.prompt).toContain("医院食堂一荤一素");
     expect(JSON.parse(result.content)).toMatchObject({
-      douyinTitles: expect.any(Array),
+      storyboard: expect.any(Array),
+      screenRecordingScript: expect.any(String),
       pinnedComments: expect.any(Array),
-      videoScript: expect.stringContaining("开饭咯"),
+      voiceoverScript: expect.stringContaining("午休"),
+    });
+  });
+
+  it("generates mock poster content for only the selected scene", async () => {
+    const result = await generateWorkbenchContent({
+      input: posterInput,
+      provider: "mock",
+      type: "poster_prompt",
+    });
+    const parsed = JSON.parse(result.content);
+
+    expect(parsed.posterCopySets[0]).toMatchObject({
+      usageScene: "朋友圈海报",
+      layoutAdvice: expect.stringContaining("朋友圈"),
+    });
+    expect(parsed.posterCopySets[0]).not.toHaveProperty("douyinLayout");
+    expect(parsed.imagePrompts[0]).toMatchObject({
+      caution: expect.stringContaining("不要出现真实商标"),
+      visualSubject: expect.any(String),
     });
   });
 });
