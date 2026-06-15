@@ -19,7 +19,11 @@ const labels: Record<string, string> = {
   conversionPosts: "成交转化型",
   dailyRecordPosts: "日常记录型",
   dmGuides: "私信引导话术",
+  douyinDmScripts: "抖音私信承接话术",
+  douyinHooks: "抖音开头 3 秒钩子",
   douyinLayout: "抖音/视频号排版建议",
+  douyinPinnedComments: "抖音评论区置顶话术",
+  douyinScripts: "抖音口播稿",
   douyinTitles: "抖音/视频号标题",
   duration: "时长",
   endingGuides: "结尾引导话术",
@@ -34,7 +38,11 @@ const labels: Record<string, string> = {
   momentsPost: "朋友圈同步文案",
   momentsPosts: "朋友圈文案",
   momentsHumanPosts: "朋友圈真人日常版",
+  momentsCommentReplies: "朋友圈评论/私聊承接话术",
   momentsConversionPosts: "朋友圈成交引导版",
+  momentsImageTextIdeas: "朋友圈配图短句",
+  momentsProblemObservationPosts: "朋友圈问题观察版",
+  momentsSoftPromotionPosts: "朋友圈轻度宣传版",
   name: "名称",
   objectionReplies: "客户异议回复",
   pinnedComments: "评论区置顶话术",
@@ -62,16 +70,33 @@ const labels: Record<string, string> = {
   textArea: "文字区域",
   usageScene: "使用场景",
   videoScript: "短视频口播稿",
+  videoChannelCommentReplies: "视频号评论区承接话术",
+  videoChannelMomentsPosts: "视频号朋友圈同步文案",
+  videoChannelScripts: "视频号口播稿",
+  videoChannelTitles: "视频号标题",
   videoTitles: "视频标题",
   visual: "画面",
   visualSubject: "画面主体",
   voiceover: "口播/字幕",
   voiceoverScript: "口播稿",
+  wechatFirstInvites: "首次私聊邀约话术",
+  wechatFollowUps: "客户没回复的追问话术",
+  wechatGroupActivityPosts: "微信群活动引导文案",
+  wechatGroupConsultReplies: "群内有人咨询后的回复",
+  wechatGroupShortPosts: "微信群短文案",
+  wechatInterestReplies: "客户感兴趣后的承接话术",
   xianyuDetail: "闲鱼详情文案",
+  xianyuDetails: "闲鱼详情文案",
+  xianyuChatReplies: "闲鱼私聊回复话术",
+  xianyuHooks: "闲鱼首句钩子",
   xianyuLayout: "闲鱼主图排版建议",
   xianyuTitles: "闲鱼标题",
   xiaohongshuLayout: "小红书封面排版建议",
   xiaohongshuPost: "小红书文案",
+  xiaohongshuPosts: "小红书正文",
+  xiaohongshuCommentGuides: "小红书评论区引导",
+  xiaohongshuDmScripts: "小红书私信承接话术",
+  xiaohongshuTitles: "小红书标题",
   xiaohongshuSoftPost: "小红书种草版",
   xiaohongshuConsultPost: "小红书引导咨询版",
 };
@@ -85,7 +110,7 @@ export function WorkbenchStructuredResult({
   generationId?: string;
   inputSummary?: Record<string, string>;
 }) {
-  const parsed = parseStructuredContent(content);
+  const parsed = filterStructuredContentForInput(parseStructuredContent(content), inputSummary);
   const fullText = parsed ? formatStructuredContent(parsed) : content;
   const [copiedKey, setCopiedKey] = useState("");
   const [, startTransition] = useTransition();
@@ -121,6 +146,35 @@ export function WorkbenchStructuredResult({
   );
 }
 
+export function filterStructuredContentForInput(
+  parsed: Record<string, StructuredValue> | null,
+  inputSummary?: Record<string, string>,
+): Record<string, StructuredValue> | null {
+  if (!parsed || !inputSummary || inputSummary.generationType !== "promotion_copy") {
+    return parsed;
+  }
+  const platform = inputSummary.publishPlatform || "朋友圈";
+  if (platform === "多平台同步") {
+    return parsed;
+  }
+  const allowed = promotionKeysForPlatform(platform);
+  return Object.fromEntries(Object.entries(parsed).filter(([key]) => allowed.includes(key)));
+}
+
+function promotionKeysForPlatform(platform: string): string[] {
+  const map: Record<string, string[]> = {
+    "朋友圈": ["momentsHumanPosts", "momentsProblemObservationPosts", "momentsSoftPromotionPosts", "momentsImageTextIdeas", "momentsCommentReplies"],
+    "抖音": ["douyinTitles", "douyinHooks", "douyinScripts", "douyinPinnedComments", "douyinDmScripts"],
+    "视频号": ["videoChannelTitles", "videoChannelScripts", "videoChannelMomentsPosts", "videoChannelCommentReplies"],
+    "小红书": ["xiaohongshuTitles", "xiaohongshuPosts", "xiaohongshuCommentGuides", "xiaohongshuDmScripts"],
+    "闲鱼": ["xianyuTitles", "xianyuDetails", "xianyuHooks", "xianyuChatReplies"],
+    "微信私聊": ["wechatFirstInvites", "wechatInterestReplies", "wechatFollowUps", "objectionReplies"],
+    "微信群": ["wechatGroupShortPosts", "wechatGroupActivityPosts", "wechatGroupConsultReplies"],
+  };
+
+  return map[platform] || map["朋友圈"];
+}
+
 function ResultSection({
   copiedKey,
   onCopy,
@@ -139,7 +193,7 @@ function ResultSection({
       <div>
         <div className="mb-2 flex flex-wrap items-center justify-between gap-2">
           <p className="text-sm font-semibold text-ink">{name}</p>
-          <CopyButton copied={copiedKey === sectionKey} label={sectionKey === "posterCopySets" ? "复制整套海报文案" : "复制本组"} onCopy={() => onCopy(renderValue(value), sectionKey)} />
+          <CopyButton copied={copiedKey === sectionKey} label={copyGroupLabel(sectionKey, name)} onCopy={() => onCopy(renderValue(value), sectionKey)} />
         </div>
         <div className="grid gap-2 sm:grid-cols-2">
           {value.map((item, index) => (
@@ -207,6 +261,9 @@ function ArrayItem({
 
 function InputSummary({ inputSummary }: { inputSummary: Record<string, string> }) {
   const items = [
+    ["推广产品", inputSummary.product],
+    ["目标客户", inputSummary.targetCustomer],
+    ["客户痛点", inputSummary.customerPain],
     ["使用场景", inputSummary.usageScene],
     ["发布平台", inputSummary.publishPlatform || inputSummary.targetPlatform],
     ["价格露出方式", inputSummary.priceExposure],
@@ -238,6 +295,16 @@ function CopyButton({ copied, label, onCopy }: { copied: boolean; label: string;
       {copied ? "已复制" : label}
     </button>
   );
+}
+
+function copyGroupLabel(sectionKey: string, name: string): string {
+  if (sectionKey === "posterCopySets") {
+    return "复制整套海报文案";
+  }
+  if (name.startsWith("朋友圈")) {
+    return `复制${name.replace(/^朋友圈/, "")}`;
+  }
+  return "复制本组";
 }
 
 function renderValue(value: StructuredValue): string {

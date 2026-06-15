@@ -1,5 +1,15 @@
 import type { WorkbenchGenerationType } from "../data/types";
 
+const priceExposureOptions = [
+  "不显示具体价格",
+  "只写基础体检/先看一下",
+  "显示 4.9 元基础体检",
+  "显示 69 元全面体检 + 修改方案",
+  "显示 39 元 AI 网站工具月卡",
+  "显示全部价格",
+  "根据补充信息决定",
+];
+
 export type WorkbenchFieldDefinition = {
   defaultValue?: string;
   label: string;
@@ -55,7 +65,7 @@ export const workbenchFieldDefinitions: Record<WorkbenchGenerationType, Workbenc
       defaultValue: "不显示具体价格",
       label: "价格露出方式",
       name: "priceExposure",
-      options: ["不显示具体价格", "只写免费体验/基础体检", "显示 4.9 元基础体检", "显示 69 元全面体检 + 修改方案", "显示 39 元 AI 网站工具月卡", "显示全部价格", "根据补充信息决定"],
+      options: priceExposureOptions,
       type: "select",
     },
     { label: "补充信息", name: "extraInfo", placeholder: "例如店铺页面问题、你想重点说的话", required: false, type: "textarea" },
@@ -87,7 +97,7 @@ export const workbenchFieldDefinitions: Record<WorkbenchGenerationType, Workbenc
       defaultValue: "根据补充信息决定",
       label: "价格露出方式",
       name: "priceExposure",
-      options: ["不显示具体价格", "只写免费体验/基础体检", "显示 4.9 元基础体检", "显示 69 元全面体检 + 修改方案", "显示 39 元 AI 网站工具月卡", "显示全部价格", "根据补充信息决定"],
+      options: priceExposureOptions,
       type: "select",
     },
     { label: "补充信息", name: "extraInfo", placeholder: "例如要强调免费三天试用、先做基础体检", required: false, type: "textarea" },
@@ -109,7 +119,7 @@ export const workbenchFieldDefinitions: Record<WorkbenchGenerationType, Workbenc
       defaultValue: "根据补充信息决定",
       label: "价格露出方式",
       name: "priceExposure",
-      options: ["不显示具体价格", "只写免费体验/基础体检", "显示 4.9 元基础体检", "显示 69 元全面体检 + 修改方案", "显示 39 元 AI 网站工具月卡", "显示全部价格", "根据补充信息决定"],
+      options: priceExposureOptions,
       type: "select",
     },
     { label: "补充信息", name: "extraInfo", placeholder: "例如颜色、比例、不要出现的元素", required: false, type: "textarea" },
@@ -129,7 +139,7 @@ export const workbenchFieldDefinitions: Record<WorkbenchGenerationType, Workbenc
       defaultValue: "根据补充信息决定",
       label: "价格露出方式",
       name: "priceExposure",
-      options: ["不显示具体价格", "只写免费体验/基础体检", "显示 4.9 元基础体检", "显示 69 元全面体检 + 修改方案", "显示 39 元 AI 网站工具月卡", "显示全部价格", "根据补充信息决定"],
+      options: priceExposureOptions,
       type: "select",
     },
     { label: "补充信息", name: "extraInfo", placeholder: "例如最近午休看店、想推广免费三天试用", required: false, type: "textarea" },

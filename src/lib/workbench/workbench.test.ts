@@ -187,23 +187,61 @@ describe("workbench prompt and provider", () => {
     expect(prompt).toContain("不要一篇文案同时塞 4.9、69、39、代运营、AI工具");
   });
 
-  it("removes explicit yuan amounts when price exposure hides prices", () => {
+  it("builds promotion output structures only for the selected platform", () => {
+    const momentsStructure = getWorkbenchOutputStructure("promotion_copy", { publishPlatform: "朋友圈" });
+    const xianyuStructure = getWorkbenchOutputStructure("promotion_copy", { publishPlatform: "闲鱼" });
+
+    expect(momentsStructure).toContain("momentsHumanPosts");
+    expect(momentsStructure).toContain("momentsProblemObservationPosts");
+    expect(momentsStructure).toContain("momentsCommentReplies");
+    expect(momentsStructure).not.toContain("douyinTitles");
+    expect(momentsStructure).not.toContain("xiaohongshuTitles");
+    expect(momentsStructure).not.toContain("xianyuTitles");
+    expect(momentsStructure).not.toContain("privateInviteScripts");
+    expect(xianyuStructure).toContain("xianyuTitles");
+    expect(xianyuStructure).toContain("xianyuDetails");
+    expect(xianyuStructure).not.toContain("momentsHumanPosts");
+    expect(xianyuStructure).not.toContain("xiaohongshuTitles");
+  });
+
+  it("adds strict platform-only rules to promotion prompts", () => {
+    const prompt = buildWorkbenchPrompt("promotion_copy", {
+      customerPain: "不知道线上店铺哪里有问题",
+      extraInfo: "",
+      priceExposure: "根据补充信息决定",
+      product: "本地门店线上运营诊断",
+      publishPlatform: "朋友圈",
+      targetCustomer: "本地生活门店老板",
+    });
+
+    expect(prompt).toContain("发布平台：朋友圈");
+    expect(prompt).toContain("只能生成发布平台对应的内容");
+    expect(prompt).toContain("如果用户选择朋友圈，就禁止输出抖音、小红书、闲鱼、视频号等模块");
+    expect(prompt).toContain("朋友圈真人日常版 5 条");
+    expect(prompt).not.toContain("小红书种草版");
+  });
+
+  it("removes explicit prices and promotional free language when price exposure hides prices", () => {
     const output = sanitizeWorkbenchOutputForPrice(
-      '{"text":"基础体检——0元诊断你的线上页面问题，后续可以做 69 元全面体检，也可以试用 39元 AI 工具。比例：9:16。"}',
-      { priceExposure: "不显示具体价格" },
+      '{"text":"免费基础体检，0元诊断你的线上页面问题，只限今天，前 10 名，名额有限，后续可以做 69 元全面体检，也可以试用 39元 AI 工具。比例：9:16。"}',
+      { extraInfo: "", priceExposure: "根据补充信息决定", publishPlatform: "朋友圈" },
     );
 
     expect(output).not.toContain("0元");
     expect(output).not.toContain("69 元");
     expect(output).not.toContain("39元");
+    expect(output).not.toContain("免费");
+    expect(output).not.toContain("只限今天");
+    expect(output).not.toContain("前 10 名");
+    expect(output).not.toContain("名额有限");
     expect(output).toContain("比例：9:16");
   });
 
   it("splits promotion and moments output into human and conversion versions", () => {
-    expect(getWorkbenchOutputStructure("promotion_copy")).toContain("momentsHumanPosts");
-    expect(getWorkbenchOutputStructure("promotion_copy")).toContain("momentsConversionPosts");
-    expect(getWorkbenchOutputStructure("promotion_copy")).toContain("xiaohongshuSoftPost");
-    expect(getWorkbenchOutputStructure("promotion_copy")).toContain("shortVideoLifeScript");
+    expect(getWorkbenchOutputStructure("promotion_copy", { publishPlatform: "多平台同步" })).toContain("momentsHumanPosts");
+    expect(getWorkbenchOutputStructure("promotion_copy", { publishPlatform: "多平台同步" })).toContain("objectionReplies");
+    expect(getWorkbenchOutputStructure("promotion_copy", { publishPlatform: "多平台同步" })).toContain("xiaohongshuTitles");
+    expect(getWorkbenchOutputStructure("promotion_copy", { publishPlatform: "多平台同步" })).toContain("douyinTitles");
     expect(getWorkbenchOutputStructure("moments_library")).toContain("dailyRecordPosts");
     expect(getWorkbenchOutputStructure("moments_library")).toContain("problemObservationPosts");
     expect(getWorkbenchOutputStructure("moments_library")).toContain("softPromotionPosts");
@@ -244,5 +282,40 @@ describe("workbench prompt and provider", () => {
       caution: expect.stringContaining("不要出现真实商标"),
       visualSubject: expect.any(String),
     });
+  });
+
+  it("generates mock promotion content only for moments and avoids default free or prices", async () => {
+    const result = await generateWorkbenchContent({
+      input: {
+        customerPain: "不知道线上店铺哪里有问题",
+        extraInfo: "",
+        priceExposure: "根据补充信息决定",
+        product: "本地门店线上运营诊断",
+        publishPlatform: "朋友圈",
+        targetCustomer: "本地生活门店老板",
+      },
+      provider: "mock",
+      type: "promotion_copy",
+    });
+    const parsed = JSON.parse(result.content);
+    const serialized = JSON.stringify(parsed);
+
+    expect(parsed).toMatchObject({
+      momentsCommentReplies: expect.any(Array),
+      momentsHumanPosts: expect.any(Array),
+      momentsImageTextIdeas: expect.any(Array),
+      momentsProblemObservationPosts: expect.any(Array),
+      momentsSoftPromotionPosts: expect.any(Array),
+    });
+    expect(parsed.momentsHumanPosts).toHaveLength(5);
+    expect(parsed.momentsProblemObservationPosts).toHaveLength(5);
+    expect(parsed.momentsSoftPromotionPosts).toHaveLength(3);
+    expect(parsed.momentsImageTextIdeas).toHaveLength(6);
+    expect(parsed.momentsCommentReplies).toHaveLength(5);
+    expect(parsed).not.toHaveProperty("douyinTitles");
+    expect(parsed).not.toHaveProperty("xiaohongshuTitles");
+    expect(parsed).not.toHaveProperty("xianyuTitles");
+    expect(parsed).not.toHaveProperty("privateInviteScripts");
+    expect(serialized).not.toMatch(/抖音|视频号|小红书|闲鱼|微信群|微信私聊|客户异议回复|4\.9|69|39|免费|只限今天|前 10 名|名额有限/);
   });
 });

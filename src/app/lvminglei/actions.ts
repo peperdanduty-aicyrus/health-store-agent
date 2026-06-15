@@ -170,7 +170,7 @@ export async function generateWorkbench(
   revalidatePath("/lvminglei/history");
   return {
     generationId: record.id,
-    inputSummary: pickInputSummary(input),
+    inputSummary: pickInputSummary(input, type),
     message:
       safeResult.replacements.length > 0
         ? `已生成，并自动替换风险表达：${safeResult.replacements.map((item) => `${item.from}→${item.to}`).join("、")}。`
@@ -212,10 +212,15 @@ export async function deleteWorkbenchGeneration(formData: FormData): Promise<voi
   revalidatePath("/lvminglei/history");
 }
 
-function pickInputSummary(input: Record<string, string>): Record<string, string> {
+function pickInputSummary(input: Record<string, string>, type: WorkbenchGenerationType): Record<string, string> {
   return {
+    customerPain: input.customerPain || "",
+    extraInfo: input.extraInfo || "",
+    generationType: type,
     priceExposure: input.priceExposure || "",
+    product: input.product || "",
     publishPlatform: input.publishPlatform || "",
+    targetCustomer: input.targetCustomer || "",
     targetPlatform: input.targetPlatform || "",
     usageScene: input.usageScene || "",
   };

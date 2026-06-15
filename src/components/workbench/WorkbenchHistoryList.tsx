@@ -68,7 +68,7 @@ export function WorkbenchHistoryList({
               <summary className="cursor-pointer font-medium text-ink">查看输入内容</summary>
               <pre className="mt-3 whitespace-pre-wrap text-sm leading-6">{formatInput(record.input)}</pre>
             </details>
-            <WorkbenchStructuredResult content={record.output} generationId={record.id} />
+            <WorkbenchStructuredResult content={record.output} generationId={record.id} inputSummary={buildInputSummary(record)} />
           </article>
         ))}
       </div>
@@ -79,9 +79,13 @@ export function WorkbenchHistoryList({
 function HistoryMeta({ account, record }: { account: WorkbenchAccount; record: WorkbenchGenerationRecord }) {
   const input = parseInput(record.input);
   const items = [
+    ["推广产品", input.product],
+    ["目标客户", input.targetCustomer],
+    ["客户痛点", input.customerPain],
     ["使用场景", input.usageScene],
     ["发布平台", input.publishPlatform || input.targetPlatform],
     ["价格露出方式", input.priceExposure],
+    ["补充信息", input.extraInfo],
     ["生成时间", new Date(record.createdAt).toLocaleString("zh-CN")],
     ["使用模型", `${record.modelProvider}:${record.modelName}`],
     account.role === "owner" ? ["账号", record.accountDisplayName] : null,
@@ -96,6 +100,21 @@ function HistoryMeta({ account, record }: { account: WorkbenchAccount; record: W
       ))}
     </div>
   );
+}
+
+function buildInputSummary(record: WorkbenchGenerationRecord): Record<string, string> {
+  const input = parseInput(record.input);
+  return {
+    customerPain: input.customerPain || "",
+    extraInfo: input.extraInfo || "",
+    generationType: record.generationType,
+    priceExposure: input.priceExposure || "",
+    product: input.product || "",
+    publishPlatform: input.publishPlatform || "",
+    targetCustomer: input.targetCustomer || "",
+    targetPlatform: input.targetPlatform || "",
+    usageScene: input.usageScene || "",
+  };
 }
 
 function formatInput(input: string): string {
