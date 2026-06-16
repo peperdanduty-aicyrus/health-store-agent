@@ -238,6 +238,30 @@ describe("workbench prompt and provider", () => {
     expect(output).toContain("比例：9:16");
   });
 
+  it("keeps only the selected single price and removes upsell ladder copy", () => {
+    const output = sanitizeWorkbenchOutputForPrice(
+      '{"text":"4.9 元基础体检，后续可以做 69 元全面体检，也可以试用 39 元 AI 网站工具月卡，免费名额有限。"}',
+      { extraInfo: "", priceExposure: "显示 4.9 元基础体检", publishPlatform: "闲鱼" },
+    );
+
+    expect(output).toContain("4.9 元基础体检");
+    expect(output).not.toContain("69");
+    expect(output).not.toContain("39");
+    expect(output).not.toContain("AI 网站工具月卡");
+    expect(output).not.toContain("免费");
+    expect(output).not.toContain("名额有限");
+  });
+
+  it("removes fabricated case and dialogue wording from workbench output", () => {
+    const output = sanitizeWorkbenchOutputForPrice(
+      '{"text":"今天帮一个朋友看页面，老板说预约量慢慢上来了。刚帮一个客户改完，立马不一样。今天午休看了几个页面，我发现主图没信任感。"}',
+      { extraInfo: "", priceExposure: "根据补充信息决定", publishPlatform: "朋友圈" },
+    );
+
+    expect(output).not.toMatch(/朋友|老板说|预约量|刚帮一个客户|立马不一样/);
+    expect(output).toContain("今天午休看了几个页面");
+  });
+
   it("splits promotion and moments output into human and conversion versions", () => {
     expect(getWorkbenchOutputStructure("promotion_copy", { publishPlatform: "多平台同步" })).toContain("momentsHumanPosts");
     expect(getWorkbenchOutputStructure("promotion_copy", { publishPlatform: "多平台同步" })).toContain("objectionReplies");
@@ -285,6 +309,19 @@ describe("workbench prompt and provider", () => {
     });
   });
 
+  it("keeps hidden-price poster copy focused on the current main content", async () => {
+    const result = await generateWorkbenchContent({
+      input: posterInput,
+      provider: "mock",
+      type: "poster_prompt",
+    });
+    const parsed = JSON.parse(result.content);
+    const serialized = JSON.stringify(parsed);
+
+    expect(serialized).not.toMatch(/完整检查|修改方案|AI文案工具|AI 网站工具|月卡|69|39/);
+    expect(parsed.imagePrompts[0].mainTitle).not.toMatch(/^主标题：/);
+  });
+
   it("generates mock promotion content only for moments and avoids default free or prices", async () => {
     const result = await generateWorkbenchContent({
       input: {
@@ -318,6 +355,41 @@ describe("workbench prompt and provider", () => {
     expect(parsed).not.toHaveProperty("xianyuTitles");
     expect(parsed).not.toHaveProperty("privateInviteScripts");
     expect(serialized).not.toMatch(/抖音|视频号|小红书|闲鱼|微信群|微信私聊|客户异议回复|4\.9|69|39|免费|只限今天|前 10 名|名额有限/);
+    expect(serialized).not.toMatch(/朋友|老板说|刚帮一个|预约量|立马不一样/);
+  });
+
+  it("keeps xianyu 4.9 mock output from upselling other prices", async () => {
+    const result = await generateWorkbenchPreview("promotion_copy", {
+      customerPain: "团单没人买",
+      extraInfo: "强调先看页面问题，不承诺订单",
+      priceExposure: "显示 4.9 元基础体检",
+      product: "本地门店线上运营诊断",
+      publishPlatform: "闲鱼",
+      targetCustomer: "本地生活门店老板",
+    }, "mock");
+
+    expect(result.result).toContain("4.9 元基础体检");
+    expect(result.result).not.toMatch(/69|39|AI月卡|AI 网站工具月卡|免费|名额有限/);
+  });
+
+  it("adds no-fabrication and low-platform rules to moments library prompts", () => {
+    const prompt = buildWorkbenchPrompt("moments_library", {
+      copyStyle: "朋友圈日常分享",
+      extraInfo: "不要广告感，围绕午休看店和页面体检",
+      priceExposure: "根据补充信息决定",
+      publishGoal: "朋友圈长期种草",
+      targetCustomer: "本地生活门店老板",
+      topic: "本地门店线上运营诊断",
+    });
+
+    expect(prompt).toContain("不要编造具体案例");
+    expect(prompt).toContain("少提平台");
+    expect(prompt).toContain("标题不清楚、主图没信任感、团单看不懂、评价没人维护、页面承接弱");
+  });
+
+  it("labels noon video opening shots in Chinese", () => {
+    expect(getWorkbenchOutputStructure("mealbox_video")).toContain("openingShotIdeas");
+    expect(getWorkbenchOutputStructure("mealbox_video")).not.toContain("openingShots");
   });
 
   it("generates a public preview result without requiring a workbench account", async () => {

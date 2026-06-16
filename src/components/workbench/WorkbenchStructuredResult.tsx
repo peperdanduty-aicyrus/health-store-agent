@@ -45,6 +45,8 @@ const labels: Record<string, string> = {
   momentsSoftPromotionPosts: "朋友圈轻度宣传版",
   name: "名称",
   objectionReplies: "客户异议回复",
+  openingShotIdeas: "开头 3 秒画面建议",
+  openingShots: "开头 3 秒画面建议",
   pinnedComments: "评论区置顶话术",
   posterCopySets: "海报文案整套",
   privateChatPosts: "私聊承接型",

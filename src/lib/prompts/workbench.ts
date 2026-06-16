@@ -48,8 +48,30 @@ export function sanitizeWorkbenchOutputForPrice(content: string, input: Workbenc
       .replace(/4\.9/g, "")
       .replace(/69/g, "")
       .replace(/39/g, "");
+  } else if (priceExposure === "显示 4.9 元基础体检") {
+    result = result
+      .replace(/69\s*元?全面体检\s*\+\s*修改方案/g, "完整检查和修改建议")
+      .replace(/69\s*元/g, "")
+      .replace(/39\s*元?\s*AI\s*网站工具月卡/g, "AI 文案工具")
+      .replace(/39\s*元/g, "")
+      .replace(/AI\s*月卡/g, "AI 文案工具")
+      .replace(/AI\s*网站工具月卡/g, "AI 文案工具");
+  } else if (priceExposure === "显示 69 元全面体检 + 修改方案") {
+    result = result
+      .replace(/4\.9\s*元?基础体检/g, "基础体检")
+      .replace(/4\.9/g, "")
+      .replace(/39\s*元?\s*AI\s*网站工具月卡/g, "AI 文案工具")
+      .replace(/39\s*元/g, "")
+      .replace(/AI\s*月卡/g, "AI 文案工具")
+      .replace(/AI\s*网站工具月卡/g, "AI 文案工具");
+  } else if (priceExposure === "显示 39 元 AI 网站工具月卡") {
+    result = result
+      .replace(/4\.9\s*元?基础体检/g, "基础体检")
+      .replace(/69\s*元?全面体检\s*\+\s*修改方案/g, "完整检查和修改建议")
+      .replace(/4\.9/g, "")
+      .replace(/69\s*元/g, "");
   }
-  if (shouldHideFree && !explicitFreeInExtra) {
+  if ((shouldHideFree || priceExposure !== "显示全部价格") && !explicitFreeInExtra) {
     result = result
       .replace(/免费/g, "")
       .replace(/限免/g, "")
@@ -62,6 +84,14 @@ export function sanitizeWorkbenchOutputForPrice(content: string, input: Workbenc
   }
 
   return result
+    .replace(/今天帮一个朋友/g, "今天午休看了几个页面")
+    .replace(/刚帮一个客户/g, "今天午休看了几个页面")
+    .replace(/帮一个朋友/g, "看了几个页面")
+    .replace(/朋友的店/g, "一个本地门店页面")
+    .replace(/老板说/g, "页面上")
+    .replace(/预约量慢慢上来了/g, "页面表达更清楚")
+    .replace(/立马不一样/g, "会更清楚")
+    .replace(/姐妹的店/g, "一个本地门店页面")
     .replace(/基础体检——诊断/g, "基础体检——先诊断")
     .replace(/基础体检——你的/g, "基础体检——看看你的");
 }
@@ -69,7 +99,7 @@ export function sanitizeWorkbenchOutputForPrice(content: string, input: Workbenc
 export function getWorkbenchOutputStructure(type: WorkbenchGenerationType, input: WorkbenchInput = {}): string {
   const structures: Record<WorkbenchGenerationType, string> = {
     mealbox_video:
-      '{"videoTitles":["视频标题1","视频标题2","视频标题3","视频标题4","视频标题5","视频标题6","视频标题7","视频标题8","视频标题9","视频标题10"],"openingShots":["开头3秒画面建议1","开头3秒画面建议2","开头3秒画面建议3","开头3秒画面建议4","开头3秒画面建议5"],"storyboard":[{"shot":"镜头1","duration":"2-3秒","visual":"画面","voiceover":"口播/字幕"},{"shot":"镜头2","duration":"2-3秒","visual":"画面","voiceover":"口播/字幕"},{"shot":"镜头3","duration":"8-15秒","visual":"画面","voiceover":"口播/字幕"},{"shot":"镜头4","duration":"8-15秒","visual":"画面","voiceover":"口播/字幕"},{"shot":"镜头5","duration":"8-15秒","visual":"画面","voiceover":"口播/字幕"},{"shot":"镜头6","duration":"3-5秒","visual":"画面","voiceover":"口播/字幕"}],"voiceoverScript":"口播稿","screenRecordingScript":"手机录屏时的讲解话术","endingGuides":["结尾引导话术1","结尾引导话术2","结尾引导话术3","结尾引导话术4","结尾引导话术5"],"pinnedComments":["评论区置顶话术1","评论区置顶话术2","评论区置顶话术3"],"momentsPosts":["朋友圈同步文案1","朋友圈同步文案2","朋友圈同步文案3"],"xiaohongshuPost":"小红书同步文案"}',
+      '{"videoTitles":["视频标题1","视频标题2","视频标题3","视频标题4","视频标题5","视频标题6","视频标题7","视频标题8","视频标题9","视频标题10"],"openingShotIdeas":["开头3秒画面建议1","开头3秒画面建议2","开头3秒画面建议3","开头3秒画面建议4","开头3秒画面建议5"],"storyboard":[{"shot":"镜头1","duration":"2-3秒","visual":"画面","voiceover":"口播/字幕"},{"shot":"镜头2","duration":"2-3秒","visual":"画面","voiceover":"口播/字幕"},{"shot":"镜头3","duration":"8-15秒","visual":"画面","voiceover":"口播/字幕"},{"shot":"镜头4","duration":"8-15秒","visual":"画面","voiceover":"口播/字幕"},{"shot":"镜头5","duration":"8-15秒","visual":"画面","voiceover":"口播/字幕"},{"shot":"镜头6","duration":"3-5秒","visual":"画面","voiceover":"口播/字幕"}],"voiceoverScript":"口播稿","screenRecordingScript":"手机录屏时的讲解话术","endingGuides":["结尾引导话术1","结尾引导话术2","结尾引导话术3","结尾引导话术4","结尾引导话术5"],"pinnedComments":["评论区置顶话术1","评论区置顶话术2","评论区置顶话术3"],"momentsPosts":["朋友圈同步文案1","朋友圈同步文案2","朋友圈同步文案3"],"xiaohongshuPost":"小红书同步文案"}',
     promotion_copy: getPromotionOutputStructure(input.publishPlatform || "朋友圈"),
     poster_prompt:
       '{"posterCopySets":[{"mainTitle":"大标题：xxxx","subtitle":"副标题：xxxx","sellingPoint1":"卖点1：xxxx","sellingPoint2":"卖点2：xxxx","sellingPoint3":"卖点3：xxxx","bottomGuide":"底部引导语：xxxx","usageScene":"使用场景","layoutAdvice":"排版建议：xxxx","imagePrompt":"AI作图提示词：xxxx"}],"imagePrompts":[{"name":"AI作图提示词1","visualSubject":"画面主体：xxxx","background":"背景环境：xxxx","textArea":"文字区域：xxxx","mainTitle":"主标题：xxxx","subtitle":"副标题：xxxx","style":"风格：xxxx","colors":"颜色：xxxx","ratio":"比例：xxxx","caution":"注意事项：不要出现真实商标，不要出现夸张医疗承诺，不要出现具体店名。"},{"name":"AI作图提示词2","visualSubject":"画面主体：xxxx","background":"背景环境：xxxx","textArea":"文字区域：xxxx","mainTitle":"主标题：xxxx","subtitle":"副标题：xxxx","style":"风格：xxxx","colors":"颜色：xxxx","ratio":"比例：xxxx","caution":"注意事项：不要出现真实商标，不要出现夸张医疗承诺，不要出现具体店名。"}]}',
@@ -154,7 +184,7 @@ function getPriceRule(input: WorkbenchInput): string {
 
 function getHumanWritingRules(): string {
   return [
-    "反 AI 文案规则：不要总用“老板看过来”开头；不要总用“是不是也这样”；不要说“客户自然就来了”；不要写“从没人到排队”；不要写“保证真实自然”“保证有效”“没效果不收费”；不要写曝光或成交数据承诺；不要太多感叹号；不要像培训老师讲课；不要像广告公司招商；不要每篇堆满美团、点评、小红书、抖音、闲鱼；不要一篇文案同时塞 4.9、69、39、代运营、AI工具，除非用户明确选择“显示全部价格”；不要编造案例结果、客户反馈或医疗疗效；不要出现“让客户主动上门”“客户自然来”“排队”等过度结果导向词。",
+    "反 AI 文案规则：不要总用“老板看过来”开头；不要总用“是不是也这样”；不要说“客户自然就来了”；不要写“从没人到排队”；不要写“保证真实自然”“保证有效”“没效果不收费”；不要写曝光或成交数据承诺；不要太多感叹号；不要像培训老师讲课；不要像广告公司招商；不要每篇堆满美团、点评、小红书、抖音、闲鱼；不要一篇文案同时塞 4.9、69、39、代运营、AI工具，除非用户明确选择“显示全部价格”；不要编造具体案例、案例结果、客户反馈或医疗疗效；不要出现“让客户主动上门”“客户自然来”“排队”等过度结果导向词。",
     "真人感文案规则：先写场景，再写观点；先说今天看到什么，再说发现什么问题；每篇只讲一个具体问题；多用短句；可以使用“我今天看了一个页面”“这个地方我觉得挺可惜”“老板不一定是不专业，是线上没表达出来”；可以有一点犀利但不要骂人；可以有打工人午休感；可以有“我不一定说得全对，但这个问题很多店都有”的口吻；结尾轻引导私聊，不要强卖。",
   ].join("\n");
 }
@@ -165,6 +195,7 @@ function getToolSpecificRules(type: WorkbenchGenerationType, input: WorkbenchInp
       "午休门店体检视频助手规则：视频形式是先拍医院食堂、医院环境、饭菜或打工人午休状态，再拍拿起手机，再切手机录屏看一家本地门店线上页面。",
       "店铺名称和隐私信息必须提醒打码；用户已经提前判断好问题，你只根据输入问题写适合拍摄的脚本。",
       "不要像培训课，不要一开头就卖服务，不要一上来就说“大家好，我是专业做运营的”。先有生活场景，再转到门店问题。每条视频只讲 1 个主要问题。话术要短，适合抖音和视频号，适合手机录屏讲解。",
+      "涉及医疗健康行业时，不要写治疗室、医生工作照、疗效、改善病症等容易偏医疗承诺或隐私风险的表述，统一写门店环境、服务场景、项目展示、页面截图。",
     ].join("\n");
   }
 
@@ -175,6 +206,7 @@ function getToolSpecificRules(type: WorkbenchGenerationType, input: WorkbenchInp
       "如果选择朋友圈海报，只输出朋友圈海报排版建议；如果选择小红书封面，只输出小红书封面排版建议；如果选择闲鱼主图，只输出闲鱼主图排版建议；如果选择抖音封面，只输出抖音封面排版建议；如果选择视频号封面，只输出视频号封面排版建议。",
       "海报文案字段必须带前缀：大标题：、副标题：、卖点1：、卖点2：、卖点3：、底部引导语：、排版建议：、AI作图提示词：。",
       "AI 作图提示词必须按字段输出：画面主体、背景环境、文字区域、主标题、副标题、风格、颜色、比例、注意事项。",
+      "如果价格露出方式是不显示具体价格，卖点只围绕当前主推内容展开，不要同时塞完整检查方案、AI 工具、后续月卡。",
     ].join("\n");
   }
 
@@ -188,7 +220,7 @@ function getToolSpecificRules(type: WorkbenchGenerationType, input: WorkbenchInp
     ].join("\n");
   }
 
-  return "朋友圈长期宣传文案库规则：不要只写广告，必须分为日常记录型、问题观察型、轻度宣传型、私聊承接型、成交转化型五类。";
+  return "朋友圈长期宣传文案库规则：不要只写广告，必须分为日常记录型、问题观察型、轻度宣传型、私聊承接型、成交转化型五类。不要编造具体案例、客户反馈、朋友对话或老板对话。少提平台，除非输入明确指定平台；默认少写美团、小红书、抖音、闲鱼，多写标题不清楚、主图没信任感、团单看不懂、评价没人维护、页面承接弱。";
 }
 
 function getPromotionPlatformRule(platform: string): string {
