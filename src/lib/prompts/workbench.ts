@@ -85,27 +85,46 @@ export function sanitizeWorkbenchOutputForPrice(content: string, input: Workbenc
       .replace(/不收费/g, "");
   }
 
-  result = sanitizeCrossPlatformTerms(result, publishPlatform);
+  result = sanitizeCrossPlatformTerms(result, publishPlatform, input);
 
   return result
+    .replace(/今天路过一家[^，。]*店/g, "今天午休看了几个本地门店页面")
+    .replace(/午休刷到一个[^，。]*店/g, "午休看了一个本地门店页面")
+    .replace(/刚看了一眼一家[^，。]*店/g, "刚看了一个本地门店页面")
+    .replace(/今天看了一家[^，。]*店/g, "今天看了一个本地门店页面")
+    .replace(/有一家[^，。]*店/g, "有个本地门店页面")
+    .replace(/看到一家[^，。]*店/g, "看到一个本地门店页面")
+    .replace(/一家[^，。]*店/g, "一个本地门店")
     .replace(/今天帮一个朋友/g, "今天午休看了几个页面")
     .replace(/刚帮一个客户/g, "今天午休看了几个页面")
     .replace(/刚帮朋友/g, "今天午休看了几个页面")
+    .replace(/我最近就在帮一些本地店做这件事，挺有意思的。?/g, "我最近也在整理这种基础体检方法。")
+    .replace(/帮一些本地店/g, "整理一些本地门店页面问题")
+    .replace(/帮本地店/g, "看本地门店页面")
     .replace(/帮一个朋友/g, "看了几个页面")
     .replace(/朋友的店/g, "一个本地门店页面")
     .replace(/朋友/g, "本地门店")
     .replace(/老板说/g, "页面上")
+    .replace(/老板问我/g, "我看到一个常见问题")
     .replace(/跟我说/g, "页面反馈")
     .replace(/预约量慢慢上来了/g, "页面表达更清楚")
     .replace(/预约量/g, "页面咨询路径")
+    .replace(/门口排着队[，,]?/g, "")
+    .replace(/排队/g, "到店咨询")
+    .replace(/线上运营像看病/g, "线上运营像做体检")
     .replace(/立马不一样/g, "会更清楚")
     .replace(/姐妹的店/g, "一个本地门店页面")
     .replace(/基础体检——诊断/g, "基础体检——先诊断")
     .replace(/基础体检——你的/g, "基础体检——看看你的");
 }
 
-function sanitizeCrossPlatformTerms(content: string, publishPlatform: string): string {
+function sanitizeCrossPlatformTerms(content: string, publishPlatform: string, input: WorkbenchInput): string {
+  const explicitInput = Object.values(input).join(" ");
   const replacements: Array<[string, string]> = [
+    ["美团点评", "线上页面"],
+    ["大众点评", "评价页"],
+    ["美团", "线上页面"],
+    ["点评", "评价页"],
     ["抖音团购", "线上团购"],
     ["抖音", "短视频平台"],
     ["视频号", "短视频平台"],
@@ -116,7 +135,8 @@ function sanitizeCrossPlatformTerms(content: string, publishPlatform: string): s
   ];
 
   return replacements.reduce((current, [from, to]) => {
-    if (publishPlatform && publishPlatform.includes(from.replace("团购", ""))) {
+    const platformToken = from.replace("团购", "");
+    if (publishPlatform.includes(platformToken) || explicitInput.includes(from)) {
       return current;
     }
     return current.split(from).join(to);

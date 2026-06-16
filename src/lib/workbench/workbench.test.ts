@@ -254,12 +254,13 @@ describe("workbench prompt and provider", () => {
 
   it("removes fabricated case and dialogue wording from workbench output", () => {
     const output = sanitizeWorkbenchOutputForPrice(
-      '{"text":"今天帮一个朋友看页面，老板说预约量慢慢上来了。刚帮朋友看了一眼，刚帮一个客户改完，立马不一样。有个开烧烤店的朋友跟我说抖音团购卖不动，小红书也没效果。今天午休看了几个页面，我发现主图没信任感。"}',
+      '{"text":"今天帮一个朋友看页面，老板说预约量慢慢上来了。刚帮朋友看了一眼，刚帮一个客户改完，立马不一样。有个开烧烤店的朋友跟我说抖音团购卖不动，小红书也没效果。今天路过一家火锅店，门口排着队。午休刷到一个烤肉店的美团页面。我最近就在帮一些本地店做这件事，挺有意思的。线上运营像看病。今天午休看了几个页面，我发现主图没信任感。"}',
       { extraInfo: "", priceExposure: "根据补充信息决定", publishPlatform: "朋友圈" },
     );
 
-    expect(output).not.toMatch(/朋友|老板说|预约量|刚帮一个客户|刚帮朋友|立马不一样|抖音|小红书/);
+    expect(output).not.toMatch(/朋友|老板说|老板问我|预约量|刚帮一个客户|刚帮朋友|立马不一样|抖音|小红书|火锅店|烤肉店|美团|帮一些本地店|排队|线上运营像看病/);
     expect(output).toContain("今天午休看了几个页面");
+    expect(output).toContain("线上页面");
   });
 
   it("splits promotion and moments output into human and conversion versions", () => {
