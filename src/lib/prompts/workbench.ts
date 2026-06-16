@@ -42,6 +42,10 @@ export function sanitizeWorkbenchOutputForPrice(content: string, input: Workbenc
     (publishPlatform.includes("小红书") && !explicitFreeInExtra);
 
   let result = content;
+  if (input.usageScene) {
+    result = result.replace(/("usageScene"\s*:\s*")[^"]+(")/g, `$1${input.usageScene}$2`);
+  }
+
   if (shouldHideAmounts) {
     result = result
       .replace(/\d+(?:\.\d+)?\s*元/g, "")
@@ -82,7 +86,10 @@ export function sanitizeWorkbenchOutputForPrice(content: string, input: Workbenc
       .replace(/前\s*10\s*名/g, "")
       .replace(/名额有限/g, "")
       .replace(/不收费，不推销/g, "")
-      .replace(/不收费/g, "");
+      .replace(/不收费/g, "")
+      .replace(/不用钱/g, "")
+      .replace(/不要钱/g, "")
+      .replace(/不花钱/g, "");
   }
 
   result = sanitizeCrossPlatformTerms(result, publishPlatform, input);
@@ -103,7 +110,7 @@ export function sanitizeWorkbenchOutputForPrice(content: string, input: Workbenc
     .replace(/帮本地店/g, "看本地门店页面")
     .replace(/帮一个朋友/g, "看了几个页面")
     .replace(/朋友的店/g, "一个本地门店页面")
-    .replace(/朋友/g, "本地门店")
+    .replace(/朋友(?!圈)/g, "本地门店")
     .replace(/老板说/g, "页面上")
     .replace(/老板问我/g, "我看到一个常见问题")
     .replace(/跟我说/g, "页面反馈")

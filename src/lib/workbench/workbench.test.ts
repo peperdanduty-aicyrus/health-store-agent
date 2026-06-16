@@ -224,7 +224,7 @@ describe("workbench prompt and provider", () => {
 
   it("removes explicit prices and promotional free language when price exposure hides prices", () => {
     const output = sanitizeWorkbenchOutputForPrice(
-      '{"text":"免费基础体检，0元诊断你的线上页面问题，只限今天，前 10 名，名额有限，后续可以做 69 元全面体检，也可以试用 39元 AI 工具。比例：9:16。"}',
+      '{"text":"免费基础体检，0元诊断你的线上页面问题，只限今天，前 10 名，名额有限，后续可以做 69 元全面体检，也可以试用 39元 AI 工具。不用钱，也不要钱，不花钱。比例：9:16。"}',
       { extraInfo: "", priceExposure: "根据补充信息决定", publishPlatform: "朋友圈" },
     );
 
@@ -232,6 +232,9 @@ describe("workbench prompt and provider", () => {
     expect(output).not.toContain("69 元");
     expect(output).not.toContain("39元");
     expect(output).not.toContain("免费");
+    expect(output).not.toContain("不用钱");
+    expect(output).not.toContain("不要钱");
+    expect(output).not.toContain("不花钱");
     expect(output).not.toContain("只限今天");
     expect(output).not.toContain("前 10 名");
     expect(output).not.toContain("名额有限");
@@ -311,6 +314,10 @@ describe("workbench prompt and provider", () => {
   });
 
   it("keeps hidden-price poster copy focused on the current main content", async () => {
+    const cleaned = sanitizeWorkbenchOutputForPrice(
+      '{"posterCopySets":[{"usageScene":"本地门店圈海报","sellingPoint1":"卖点1：基础体检","layoutAdvice":"排版建议：竖版"}]}',
+      { extraInfo: "", priceExposure: "不显示具体价格", usageScene: "朋友圈海报" },
+    );
     const result = await generateWorkbenchContent({
       input: posterInput,
       provider: "mock",
@@ -319,6 +326,7 @@ describe("workbench prompt and provider", () => {
     const parsed = JSON.parse(result.content);
     const serialized = JSON.stringify(parsed);
 
+    expect(cleaned).toContain('"usageScene":"朋友圈海报"');
     expect(serialized).not.toMatch(/完整检查|修改方案|AI文案工具|AI 网站工具|月卡|69|39/);
     expect(parsed.imagePrompts[0].mainTitle).not.toMatch(/^主标题：/);
   });
