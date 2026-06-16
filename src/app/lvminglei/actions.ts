@@ -3,13 +3,11 @@
 import { cookies } from "next/headers";
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
-import { generateWorkbenchContent } from "@/lib/ai/provider";
 import { workbenchSessionCookieName, requireWorkbenchAccount, requireWorkbenchOwner } from "@/lib/auth/workbench-session";
 import { getDataStore } from "@/lib/data/repository";
 import type { WorkbenchGenerationType } from "@/lib/data/types";
 import { workbenchToolDefinitions } from "@/lib/domain/workbench";
-import { sanitizeWorkbenchOutputForPrice } from "@/lib/prompts/workbench";
-import { replaceSensitiveWords } from "@/lib/safety/sensitive-words";
+import { generateWorkbenchPreview } from "@/lib/workbench/generation";
 
 export type WorkbenchLoginState = {
   message: string;
@@ -151,9 +149,7 @@ export async function generateWorkbench(
       .map(([key, value]) => [key, String(value || "").trim()]),
   ) as Record<string, string>;
 
-  const generated = await generateWorkbenchContent({ input, type });
-  const priceSafeContent = sanitizeWorkbenchOutputForPrice(generated.content, input);
-  const safeResult = replaceSensitiveWords(priceSafeContent);
+  const preview = await generateWorkbenchPreview(type, input);
   const record = await (await getDataStore()).createWorkbenchGeneration({
     accountDisplayName: account.displayName,
     accountId: account.id,
@@ -161,20 +157,17 @@ export async function generateWorkbench(
     copied: false,
     generationType: type,
     input: JSON.stringify(input),
-    modelName: generated.model,
-    modelProvider: generated.provider,
-    output: safeResult.content,
-    prompt: generated.prompt,
+    modelName: preview.model,
+    modelProvider: preview.provider,
+    output: preview.result,
+    prompt: preview.prompt,
   });
 
   revalidatePath("/lvminglei/history");
   return {
     generationId: record.id,
-    inputSummary: pickInputSummary(input, type),
-    message:
-      safeResult.replacements.length > 0
-        ? `已生成，并自动替换风险表达：${safeResult.replacements.map((item) => `${item.from}→${item.to}`).join("、")}。`
-        : "已生成，并保存到历史记录。",
+    inputSummary: preview.inputSummary,
+    message: preview.message === "已生成。" ? "已生成，并保存到历史记录。" : preview.message,
     result: record.output,
     success: true,
   };
@@ -210,18 +203,4 @@ export async function deleteWorkbenchGeneration(formData: FormData): Promise<voi
 
   await store.deleteWorkbenchGeneration(generationId);
   revalidatePath("/lvminglei/history");
-}
-
-function pickInputSummary(input: Record<string, string>, type: WorkbenchGenerationType): Record<string, string> {
-  return {
-    customerPain: input.customerPain || "",
-    extraInfo: input.extraInfo || "",
-    generationType: type,
-    priceExposure: input.priceExposure || "",
-    product: input.product || "",
-    publishPlatform: input.publishPlatform || "",
-    targetCustomer: input.targetCustomer || "",
-    targetPlatform: input.targetPlatform || "",
-    usageScene: input.usageScene || "",
-  };
 }

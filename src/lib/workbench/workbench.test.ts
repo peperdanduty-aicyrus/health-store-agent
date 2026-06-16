@@ -2,6 +2,7 @@ import { describe, expect, it } from "vitest";
 import { generateWorkbenchContent } from "../ai/provider";
 import { createMockStore } from "../data/store";
 import { workbenchFieldDefinitions, workbenchToolDefinitions } from "../domain/workbench";
+import { generateWorkbenchPreview } from "./generation";
 import { buildWorkbenchPrompt, getWorkbenchOutputStructure, sanitizeWorkbenchOutputForPrice } from "../prompts/workbench";
 
 const mealboxInput = {
@@ -317,5 +318,28 @@ describe("workbench prompt and provider", () => {
     expect(parsed).not.toHaveProperty("xianyuTitles");
     expect(parsed).not.toHaveProperty("privateInviteScripts");
     expect(serialized).not.toMatch(/抖音|视频号|小红书|闲鱼|微信群|微信私聊|客户异议回复|4\.9|69|39|免费|只限今天|前 10 名|名额有限/);
+  });
+
+  it("generates a public preview result without requiring a workbench account", async () => {
+    const result = await generateWorkbenchPreview("promotion_copy", {
+      customerPain: "不知道线上店铺哪里有问题",
+      extraInfo: "",
+      priceExposure: "根据补充信息决定",
+      product: "本地门店线上运营诊断",
+      publishPlatform: "朋友圈",
+      targetCustomer: "本地生活门店老板",
+    }, "mock");
+
+    expect(result).toMatchObject({
+      inputSummary: expect.objectContaining({
+        generationType: "promotion_copy",
+        publishPlatform: "朋友圈",
+      }),
+      model: "mock-workbench-copywriter",
+      provider: "mock",
+      success: true,
+    });
+    expect(result.result).toContain("momentsHumanPosts");
+    expect(result.result).not.toMatch(/抖音|小红书|闲鱼|4\.9|69|39|免费/);
   });
 });

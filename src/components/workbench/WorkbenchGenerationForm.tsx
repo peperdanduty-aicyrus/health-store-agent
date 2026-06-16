@@ -12,15 +12,17 @@ const initialState: WorkbenchGenerationState = {
 };
 
 export function WorkbenchGenerationForm({
+  actionOverride,
   fields,
   initialValues = {},
   type,
 }: {
+  actionOverride?: (previousState: WorkbenchGenerationState, formData: FormData) => Promise<WorkbenchGenerationState>;
   fields: WorkbenchFieldDefinition[];
   initialValues?: Record<string, string>;
   type: WorkbenchGenerationType;
 }) {
-  const [state, action, pending] = useActionState(generateWorkbench, initialState);
+  const [state, action, pending] = useActionState(actionOverride || generateWorkbench, initialState);
 
   return (
     <form action={action} className="rounded-lg border border-ink/10 bg-white p-5 shadow-sm">
