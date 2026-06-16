@@ -254,11 +254,11 @@ describe("workbench prompt and provider", () => {
 
   it("removes fabricated case and dialogue wording from workbench output", () => {
     const output = sanitizeWorkbenchOutputForPrice(
-      '{"text":"今天帮一个朋友看页面，老板说预约量慢慢上来了。刚帮一个客户改完，立马不一样。今天午休看了几个页面，我发现主图没信任感。"}',
+      '{"text":"今天帮一个朋友看页面，老板说预约量慢慢上来了。刚帮朋友看了一眼，刚帮一个客户改完，立马不一样。有个开烧烤店的朋友跟我说抖音团购卖不动，小红书也没效果。今天午休看了几个页面，我发现主图没信任感。"}',
       { extraInfo: "", priceExposure: "根据补充信息决定", publishPlatform: "朋友圈" },
     );
 
-    expect(output).not.toMatch(/朋友|老板说|预约量|刚帮一个客户|立马不一样/);
+    expect(output).not.toMatch(/朋友|老板说|预约量|刚帮一个客户|刚帮朋友|立马不一样|抖音|小红书/);
     expect(output).toContain("今天午休看了几个页面");
   });
 

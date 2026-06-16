@@ -52,8 +52,10 @@ export function sanitizeWorkbenchOutputForPrice(content: string, input: Workbenc
     result = result
       .replace(/69\s*元?全面体检\s*\+\s*修改方案/g, "完整检查和修改建议")
       .replace(/69\s*元/g, "")
+      .replace(/(?<![\d.])69(?![\d:])/g, "")
       .replace(/39\s*元?\s*AI\s*网站工具月卡/g, "AI 文案工具")
       .replace(/39\s*元/g, "")
+      .replace(/(?<![\d.])39(?![\d:])/g, "")
       .replace(/AI\s*月卡/g, "AI 文案工具")
       .replace(/AI\s*网站工具月卡/g, "AI 文案工具");
   } else if (priceExposure === "显示 69 元全面体检 + 修改方案") {
@@ -83,17 +85,42 @@ export function sanitizeWorkbenchOutputForPrice(content: string, input: Workbenc
       .replace(/不收费/g, "");
   }
 
+  result = sanitizeCrossPlatformTerms(result, publishPlatform);
+
   return result
     .replace(/今天帮一个朋友/g, "今天午休看了几个页面")
     .replace(/刚帮一个客户/g, "今天午休看了几个页面")
+    .replace(/刚帮朋友/g, "今天午休看了几个页面")
     .replace(/帮一个朋友/g, "看了几个页面")
     .replace(/朋友的店/g, "一个本地门店页面")
+    .replace(/朋友/g, "本地门店")
     .replace(/老板说/g, "页面上")
+    .replace(/跟我说/g, "页面反馈")
     .replace(/预约量慢慢上来了/g, "页面表达更清楚")
+    .replace(/预约量/g, "页面咨询路径")
     .replace(/立马不一样/g, "会更清楚")
     .replace(/姐妹的店/g, "一个本地门店页面")
     .replace(/基础体检——诊断/g, "基础体检——先诊断")
     .replace(/基础体检——你的/g, "基础体检——看看你的");
+}
+
+function sanitizeCrossPlatformTerms(content: string, publishPlatform: string): string {
+  const replacements: Array<[string, string]> = [
+    ["抖音团购", "线上团购"],
+    ["抖音", "短视频平台"],
+    ["视频号", "短视频平台"],
+    ["小红书", "内容平台"],
+    ["闲鱼", "二手平台"],
+    ["微信群", "社群"],
+    ["微信私聊", "私聊"],
+  ];
+
+  return replacements.reduce((current, [from, to]) => {
+    if (publishPlatform && publishPlatform.includes(from.replace("团购", ""))) {
+      return current;
+    }
+    return current.split(from).join(to);
+  }, content);
 }
 
 export function getWorkbenchOutputStructure(type: WorkbenchGenerationType, input: WorkbenchInput = {}): string {

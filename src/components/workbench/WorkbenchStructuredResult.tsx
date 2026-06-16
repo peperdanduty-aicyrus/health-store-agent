@@ -344,6 +344,9 @@ function fieldTitle(value: Record<string, StructuredValue>): string {
 function renderFieldLine(key: string, value: StructuredValue): string {
   const label = labelFor(key);
   const rendered = renderValue(value);
+  if (key === "mainTitle" && rendered.startsWith("主标题：")) {
+    return rendered;
+  }
   return rendered.startsWith(`${label}：`) ? rendered : `${label}：${rendered}`;
 }
 
