@@ -5,6 +5,9 @@ import { generateWorkbenchTest } from "@/app/lvminglei-test/actions";
 import { WorkbenchGenerationForm } from "@/components/workbench/WorkbenchGenerationForm";
 import type { WorkbenchGenerationType } from "@/lib/data/types";
 import { workbenchFieldDefinitions, workbenchToolDefinitions } from "@/lib/domain/workbench";
+import { isWorkbenchPublicTestEnabled } from "@/lib/workbench/public-test";
+
+export const dynamic = "force-dynamic";
 
 export const metadata: Metadata = {
   robots: {
@@ -15,6 +18,10 @@ export const metadata: Metadata = {
 };
 
 export default async function WorkbenchPublicTestToolPage({ params }: { params: Promise<{ type: string }> }) {
+  if (!isWorkbenchPublicTestEnabled()) {
+    notFound();
+  }
+
   const { type } = await params;
 
   if (!Object.keys(workbenchToolDefinitions).includes(type)) {

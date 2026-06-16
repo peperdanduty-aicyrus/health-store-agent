@@ -1,5 +1,9 @@
 import type { Metadata } from "next";
+import { notFound } from "next/navigation";
 import { WorkbenchToolGrid } from "@/components/workbench/WorkbenchToolGrid";
+import { isWorkbenchPublicTestEnabled } from "@/lib/workbench/public-test";
+
+export const dynamic = "force-dynamic";
 
 export const metadata: Metadata = {
   robots: {
@@ -10,6 +14,10 @@ export const metadata: Metadata = {
 };
 
 export default function WorkbenchPublicTestPage() {
+  if (!isWorkbenchPublicTestEnabled()) {
+    notFound();
+  }
+
   return (
     <main className="min-h-screen bg-paper">
       <div className="mx-auto max-w-6xl px-5 py-8 sm:px-8">

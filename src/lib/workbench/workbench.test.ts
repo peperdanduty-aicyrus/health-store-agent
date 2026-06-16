@@ -3,6 +3,7 @@ import { generateWorkbenchContent } from "../ai/provider";
 import { createMockStore } from "../data/store";
 import { workbenchFieldDefinitions, workbenchToolDefinitions } from "../domain/workbench";
 import { generateWorkbenchPreview } from "./generation";
+import { isWorkbenchPublicTestEnabled } from "./public-test";
 import { buildWorkbenchPrompt, getWorkbenchOutputStructure, sanitizeWorkbenchOutputForPrice } from "../prompts/workbench";
 
 const mealboxInput = {
@@ -117,6 +118,14 @@ describe("workbench store", () => {
     expect(store.markWorkbenchGenerationCopied(subRecord.id)).toMatchObject({ copied: true });
     expect(store.deleteWorkbenchGeneration(ownerRecord.id)).toBe(true);
     expect(store.listWorkbenchGenerations()).toEqual([expect.objectContaining({ id: subRecord.id })]);
+  });
+});
+
+describe("workbench public test page", () => {
+  it("stays hidden unless the environment explicitly enables it", () => {
+    expect(isWorkbenchPublicTestEnabled({})).toBe(false);
+    expect(isWorkbenchPublicTestEnabled({ WORKBENCH_PUBLIC_TEST_ENABLED: "false" })).toBe(false);
+    expect(isWorkbenchPublicTestEnabled({ WORKBENCH_PUBLIC_TEST_ENABLED: "true" })).toBe(true);
   });
 });
 

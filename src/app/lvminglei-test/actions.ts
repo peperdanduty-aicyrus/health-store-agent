@@ -4,11 +4,16 @@ import type { WorkbenchGenerationState } from "@/app/lvminglei/actions";
 import type { WorkbenchGenerationType } from "@/lib/data/types";
 import { workbenchToolDefinitions } from "@/lib/domain/workbench";
 import { generateWorkbenchPreview } from "@/lib/workbench/generation";
+import { isWorkbenchPublicTestEnabled } from "@/lib/workbench/public-test";
 
 export async function generateWorkbenchTest(
   _previousState: WorkbenchGenerationState,
   formData: FormData,
 ): Promise<WorkbenchGenerationState> {
+  if (!isWorkbenchPublicTestEnabled()) {
+    return { message: "测试页已关闭。", success: false };
+  }
+
   const type = String(formData.get("type") || "") as WorkbenchGenerationType;
 
   if (!workbenchToolDefinitions[type]) {
