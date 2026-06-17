@@ -63,6 +63,7 @@ export type GenerationRecord = {
   result: string;
   sensitiveCheckResult: string;
   copied: boolean;
+  usedStoreProfile: boolean;
   userNote: string;
   modelProvider: string;
   modelName: string;
@@ -77,6 +78,24 @@ export type GenerationFilter = {
   planName?: PlanName;
   storeType?: string;
 };
+
+export type StoreProfileUploadBy = "customer" | "admin";
+
+export type StoreProfileRecord = {
+  id: string;
+  userId: string;
+  storeName: string;
+  pdfFileName: string;
+  pdfFilePath: string;
+  extractedTextPreview: string;
+  extractedText: string;
+  profileSummary: string;
+  uploadBy: StoreProfileUploadBy;
+  createdAt: string;
+  updatedAt: string;
+};
+
+export type UpsertStoreProfileInput = Omit<StoreProfileRecord, "id" | "createdAt" | "updatedAt">;
 
 export type WorkbenchAccountRole = "owner" | "subaccount";
 

@@ -10,6 +10,8 @@ import type {
   Profile,
   OpeningApplication,
   OpeningApplicationStatus,
+  StoreProfileRecord,
+  UpsertStoreProfileInput,
   WorkbenchAccount,
   WorkbenchGenerationFilter,
   WorkbenchGenerationRecord,
@@ -19,6 +21,7 @@ type StoreState = {
   applications: OpeningApplication[];
   generations: GenerationRecord[];
   profiles: Profile[];
+  storeProfiles: StoreProfileRecord[];
   workbenchAccounts: WorkbenchAccount[];
   workbenchGenerations: WorkbenchGenerationRecord[];
 };
@@ -28,6 +31,7 @@ export function createMockStore(initialState?: Partial<StoreState>) {
     applications: clone(initialState?.applications ?? seedOpeningApplications),
     generations: clone(initialState?.generations ?? seedGenerations),
     profiles: clone(initialState?.profiles ?? seedProfiles),
+    storeProfiles: clone(initialState?.storeProfiles ?? []),
     workbenchAccounts: clone(initialState?.workbenchAccounts ?? seedWorkbenchAccounts),
     workbenchGenerations: clone(initialState?.workbenchGenerations ?? []),
   };
@@ -88,6 +92,24 @@ export function createMockStore(initialState?: Partial<StoreState>) {
       return record;
     },
 
+    upsertStoreProfile(input: UpsertStoreProfileInput): StoreProfileRecord {
+      const now = new Date().toISOString();
+      const existing = state.storeProfiles.find((profile) => profile.userId === input.userId);
+      if (existing) {
+        Object.assign(existing, input, { updatedAt: now });
+        return existing;
+      }
+
+      const record: StoreProfileRecord = {
+        ...input,
+        id: makeId("store_profile", state.storeProfiles.length + 1),
+        createdAt: now,
+        updatedAt: now,
+      };
+      state.storeProfiles.unshift(record);
+      return record;
+    },
+
     deleteAllGenerations(): number {
       const deletedCount = state.generations.length;
       state.generations = [];
@@ -104,6 +126,12 @@ export function createMockStore(initialState?: Partial<StoreState>) {
       const originalLength = state.applications.length;
       state.applications = state.applications.filter((application) => application.id !== id);
       return state.applications.length !== originalLength;
+    },
+
+    deleteStoreProfile(userId: string): boolean {
+      const originalLength = state.storeProfiles.length;
+      state.storeProfiles = state.storeProfiles.filter((profile) => profile.userId !== userId);
+      return state.storeProfiles.length !== originalLength;
     },
 
     deleteWorkbenchGeneration(id: string): boolean {
@@ -131,6 +159,10 @@ export function createMockStore(initialState?: Partial<StoreState>) {
       return [...state.profiles];
     },
 
+    listStoreProfiles(): StoreProfileRecord[] {
+      return [...state.storeProfiles];
+    },
+
     listWorkbenchAccounts(): WorkbenchAccount[] {
       return [...state.workbenchAccounts];
     },
@@ -147,6 +179,10 @@ export function createMockStore(initialState?: Partial<StoreState>) {
 
     getUserById(id: string): Profile | null {
       return state.profiles.find((profile) => profile.id === id) ?? null;
+    },
+
+    getStoreProfileByUserId(userId: string): StoreProfileRecord | null {
+      return state.storeProfiles.find((profile) => profile.userId === userId) ?? null;
     },
 
     getWorkbenchAccountById(id: string): WorkbenchAccount | null {
@@ -211,6 +247,16 @@ export function createMockStore(initialState?: Partial<StoreState>) {
       application.openedUserId = openedUserId || application.openedUserId;
       application.updatedAt = new Date().toISOString();
       return application;
+    },
+
+    updateStoreProfileSummary(userId: string, profileSummary: string): StoreProfileRecord | null {
+      const record = state.storeProfiles.find((profile) => profile.userId === userId);
+      if (!record) {
+        return null;
+      }
+      record.profileSummary = profileSummary;
+      record.updatedAt = new Date().toISOString();
+      return record;
     },
 
     updateUserDisabled(id: string, disabled: boolean): Profile | null {

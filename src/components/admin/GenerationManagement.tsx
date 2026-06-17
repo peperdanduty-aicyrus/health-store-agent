@@ -61,7 +61,8 @@ export function GenerationManagement({ generations }: { generations: GenerationR
                 <p className="text-xs text-ink/50">{new Date(record.createdAt).toLocaleString("zh-CN")}</p>
               </div>
               <p className="mt-2 text-sm leading-6 text-ink/62">
-                {record.phone} / {sceneDefinitions[record.generationType].label} / {record.projectName} / {record.modelProvider}:{record.modelName}
+                {record.phone} / {sceneDefinitions[record.generationType].label} / {record.projectName} / 店铺资料：
+                {record.usedStoreProfile ? "是" : "否"} / {record.modelProvider}:{record.modelName}
               </p>
               <div className="mt-3 flex flex-wrap items-center justify-between gap-3">
                 <p className="text-sm leading-6 text-ink/62">复制：{record.copied ? "是" : "否"}；备注：{record.userNote || "无"}</p>

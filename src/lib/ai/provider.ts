@@ -1,6 +1,7 @@
 import type { SceneKey } from "../domain/scenes";
 import type { WorkbenchGenerationType } from "../data/types";
 import { buildScenePrompt, type GenerationInput, type StoreProfileForPrompt } from "../prompts/scenes";
+import { buildStoreProfileSummaryPrompt } from "../prompts/store-profile";
 import { buildWorkbenchPrompt, type WorkbenchInput } from "../prompts/workbench";
 import { generateWithDeepSeek } from "./providers/deepseek";
 import { generateWithMockProvider } from "./providers/mock";
@@ -27,6 +28,12 @@ export type GenerateWorkbenchContentInput = {
   input: WorkbenchInput;
   provider?: AiProvider;
   type: WorkbenchGenerationType;
+};
+
+export type GenerateStoreProfileSummaryInput = {
+  extractedText: string;
+  provider?: AiProvider;
+  storeProfile: StoreProfileForPrompt;
 };
 
 export async function generateContent({
@@ -78,6 +85,86 @@ export async function generateWorkbenchContent({
   }
 
   return generateWithQwen({ prompt, provider: "openai-compatible" });
+}
+
+export async function generateStoreProfileSummary({
+  extractedText,
+  provider = readProviderFromEnv(),
+  storeProfile,
+}: GenerateStoreProfileSummaryInput): Promise<GenerateContentResult> {
+  const prompt = buildStoreProfileSummaryPrompt({ extractedText, storeProfile });
+
+  if (provider === "mock") {
+    const summary = [
+      "【店铺基础信息】",
+      `* 店铺名称：${storeProfile.storeName}`,
+      `* 门店类型：${storeProfile.storeType}`,
+      `* 所在区域：${storeProfile.cityArea || "资料中未明确"}`,
+      "* 服务人群：资料中未明确",
+      "* 营业时间：资料中未明确",
+      "* 联系方式：资料中未明确",
+      "",
+      "【核心项目】",
+      `* 项目1：${storeProfile.mainProjects || "资料中未明确"}`,
+      "* 项目2：资料中未明确",
+      "* 项目3：资料中未明确",
+      "",
+      "【项目卖点】",
+      `* 卖点1：${storeProfile.storeAdvantages || "资料中未明确"}`,
+      "* 卖点2：先了解基础情况，再建议是否到店咨询",
+      "* 卖点3：以实际体验为准",
+      "",
+      "【适合宣传的内容】",
+      "* 适合小红书宣传的角度：日常养护和到店前注意事项",
+      "* 适合朋友圈宣传的角度：门店真实服务流程和老客提醒",
+      "* 适合美团/点评宣传的角度：项目流程、适合人群和购买须知",
+      "* 适合抖音/快手宣传的角度：门店环境、服务过程和咨询引导",
+      "",
+      "【价格/套餐信息】",
+      "* 资料中未明确",
+      "",
+      "【服务流程】",
+      "* 客户到店后的大致流程：先咨询了解，再到店评估，按实际情况安排体验。",
+      "",
+      "【注意事项】",
+      "* 哪些内容不能夸大：不承诺效果，不使用根治、治愈等表达。",
+      "* 哪些表达需要合规：建议使用调理、改善体验、日常养护、以实际体验为准。",
+      "",
+      "【可用于生成文案的店铺关键词】",
+      `* 关键词1：${storeProfile.storeType}`,
+      "* 关键词2：日常养护",
+      "* 关键词3：到店咨询",
+    ].join("\n");
+    return {
+      content: summary,
+      model: "mock-store-profile-summarizer",
+      prompt,
+      provider: "mock",
+    };
+  }
+
+  const generated =
+    provider === "deepseek"
+      ? await generateWithDeepSeek({ prompt })
+      : provider === "qwen"
+        ? await generateWithQwen({ prompt })
+        : await generateWithQwen({ prompt, provider: "openai-compatible" });
+  return {
+    ...generated,
+    content: extractSummaryFromModelContent(generated.content),
+  };
+}
+
+function extractSummaryFromModelContent(content: string): string {
+  try {
+    const parsed = JSON.parse(content) as { summary?: unknown };
+    if (typeof parsed.summary === "string" && parsed.summary.trim()) {
+      return parsed.summary.trim();
+    }
+  } catch {
+    // Keep plain text if a provider ignores the JSON instruction.
+  }
+  return content.trim();
 }
 
 function readProviderFromEnv(): AiProvider {

@@ -53,4 +53,21 @@ describe("scene prompt builder", () => {
     expect(prompt).toContain("根治、治愈、保证有效、最有效、第一、百分百、永久、无副作用、包好、神医、祖传秘方");
     expect(prompt).toContain("抖音/快手文案场景不要输出任何 # 标签");
   });
+
+  it("injects only the saved store profile summary into scene prompts", () => {
+    const prompt = buildScenePrompt(
+      "xiaohongshu",
+      {
+        ...storeProfile,
+        storeProfileSummary: "【核心项目】\n* 项目1：肩颈调理\n【项目卖点】\n* 卖点1：老客复购多",
+      },
+      input,
+    );
+
+    expect(prompt).toContain("以下是该店铺的资料摘要");
+    expect(prompt).toContain("老客复购多");
+    expect(prompt).toContain("不要编造资料中没有的信息");
+    expect(prompt).toContain("生成结果中不要出现“根据 PDF 资料”");
+    expect(prompt).not.toContain("PDF 原文");
+  });
 });

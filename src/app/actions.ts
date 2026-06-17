@@ -3,13 +3,20 @@
 import { cookies } from "next/headers";
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
-import { generateContent } from "@/lib/ai/provider";
+import { generateContent, generateStoreProfileSummary } from "@/lib/ai/provider";
 import { sessionCookieName } from "@/lib/auth/session";
 import { getDataStore } from "@/lib/data/repository";
-import type { CreateUserInput } from "@/lib/data/types";
+import type { CreateUserInput, Profile, StoreProfileUploadBy, UpsertStoreProfileInput } from "@/lib/data/types";
 import type { PlanName } from "@/lib/domain/plans";
 import { canGenerate } from "@/lib/domain/permissions";
 import type { SceneKey } from "@/lib/domain/scenes";
+import {
+  extractPdfTextFromBuffer,
+  getExtractedTextPreview,
+  getVirtualPdfPath,
+  trimExtractedTextForSummary,
+  validatePdfUpload,
+} from "@/lib/pdf/store-profile-pdf";
 import { replaceSensitiveWords } from "@/lib/safety/sensitive-words";
 
 export type OpeningApplicationFormState = {
@@ -40,6 +47,11 @@ export type PasswordFormState = {
 };
 
 export type DeleteActionState = {
+  message: string;
+  success: boolean;
+};
+
+export type StoreProfileActionState = {
   message: string;
   success: boolean;
 };
@@ -333,6 +345,148 @@ export async function changeOwnPassword(
   redirect(profile.role === "admin" ? "/cyrus" : "/login");
 }
 
+export async function uploadCustomerStoreProfile(
+  _previousState: StoreProfileActionState,
+  formData: FormData,
+): Promise<StoreProfileActionState> {
+  const profile = await requireCustomerProfile();
+  if (!profile) {
+    return { message: "请先登录后再上传。", success: false };
+  }
+
+  try {
+    const input = await buildStoreProfileUploadInput({
+      file: formData.get("pdf"),
+      profile,
+      uploadBy: "customer",
+    });
+    await (await getDataStore()).upsertStoreProfile(input);
+  } catch (error) {
+    return { message: getActionErrorMessage(error, "上传失败，请稍后重试。"), success: false };
+  }
+
+  revalidatePath("/app/store-profile");
+  revalidatePath("/cyrus/store-profiles");
+  return { message: "店铺资料已上传并生成摘要，后续生成内容会优先参考这份资料。", success: true };
+}
+
+export async function uploadAdminStoreProfile(
+  _previousState: StoreProfileActionState,
+  formData: FormData,
+): Promise<StoreProfileActionState> {
+  const admin = await requireAdminProfile();
+  if (!admin) {
+    return { message: "请先登录管理员后台。", success: false };
+  }
+
+  const store = await getDataStore();
+  const userId = String(formData.get("userId") || "");
+  const profile = userId ? await store.getUserById(userId) : null;
+  if (!profile || profile.role !== "user") {
+    return { message: "未找到客户账号。", success: false };
+  }
+
+  try {
+    const input = await buildStoreProfileUploadInput({
+      file: formData.get("pdf"),
+      profile,
+      uploadBy: "admin",
+    });
+    await store.upsertStoreProfile(input);
+  } catch (error) {
+    return { message: getActionErrorMessage(error, "上传失败，请稍后重试。"), success: false };
+  }
+
+  revalidatePath("/cyrus/store-profiles");
+  revalidatePath(`/cyrus/store-profiles/${profile.id}`);
+  revalidatePath("/app/store-profile");
+  return { message: "已为客户上传店铺资料并生成摘要。", success: true };
+}
+
+export async function saveCustomerStoreProfileSummary(
+  _previousState: StoreProfileActionState,
+  formData: FormData,
+): Promise<StoreProfileActionState> {
+  const profile = await requireCustomerProfile();
+  if (!profile) {
+    return { message: "请先登录后再保存。", success: false };
+  }
+
+  return saveStoreProfileSummary(profile.id, String(formData.get("profileSummary") || ""), ["/app/store-profile"]);
+}
+
+export async function saveAdminStoreProfileSummary(
+  _previousState: StoreProfileActionState,
+  formData: FormData,
+): Promise<StoreProfileActionState> {
+  const admin = await requireAdminProfile();
+  if (!admin) {
+    return { message: "请先登录管理员后台。", success: false };
+  }
+
+  const userId = String(formData.get("userId") || "");
+  return saveStoreProfileSummary(userId, String(formData.get("profileSummary") || ""), [
+    "/cyrus/store-profiles",
+    `/cyrus/store-profiles/${userId}`,
+  ]);
+}
+
+export async function deleteCustomerStoreProfile(
+  _previousState: StoreProfileActionState,
+  _formData: FormData,
+): Promise<StoreProfileActionState> {
+  const profile = await requireCustomerProfile();
+  if (!profile) {
+    return { message: "请先登录后再删除。", success: false };
+  }
+
+  return deleteStoreProfileForUser(profile.id, ["/app/store-profile", "/cyrus/store-profiles"]);
+}
+
+export async function deleteAdminStoreProfile(
+  _previousState: StoreProfileActionState,
+  formData: FormData,
+): Promise<StoreProfileActionState> {
+  const admin = await requireAdminProfile();
+  if (!admin) {
+    return { message: "请先登录管理员后台。", success: false };
+  }
+
+  const userId = String(formData.get("userId") || "");
+  return deleteStoreProfileForUser(userId, ["/cyrus/store-profiles", `/cyrus/store-profiles/${userId}`]);
+}
+
+export async function regenerateCustomerStoreProfileSummary(
+  _previousState: StoreProfileActionState,
+  _formData: FormData,
+): Promise<StoreProfileActionState> {
+  const profile = await requireCustomerProfile();
+  if (!profile) {
+    return { message: "请先登录后再操作。", success: false };
+  }
+
+  return regenerateStoreProfileSummary(profile, ["/app/store-profile", "/cyrus/store-profiles"]);
+}
+
+export async function regenerateAdminStoreProfileSummary(
+  _previousState: StoreProfileActionState,
+  formData: FormData,
+): Promise<StoreProfileActionState> {
+  const admin = await requireAdminProfile();
+  if (!admin) {
+    return { message: "请先登录管理员后台。", success: false };
+  }
+
+  const store = await getDataStore();
+  const userId = String(formData.get("userId") || "");
+  const profile = userId ? await store.getUserById(userId) : null;
+  if (!profile || profile.role !== "user") {
+    return { message: "未找到客户账号。", success: false };
+  }
+
+  return regenerateStoreProfileSummary(profile, ["/cyrus/store-profiles", `/cyrus/store-profiles/${profile.id}`]);
+}
+
 export async function markGeneratedContentCopied(generationId: string): Promise<void> {
   const cookieStore = await cookies();
   const userId = cookieStore.get(sessionCookieName)?.value;
@@ -393,10 +547,15 @@ export async function generateForScene(
     return { message: "请填写项目名称、目标客户和宣传目的。", success: false };
   }
 
+  const storeProfileRecord = await store.getStoreProfileByUserId(profile.id);
+  const storeProfileSummary = storeProfileRecord?.profileSummary.trim() || "";
   const generated = await generateContent({
     input,
     scene,
-    storeProfile: profile,
+    storeProfile: {
+      ...profile,
+      storeProfileSummary,
+    },
     userId: profile.id,
   });
   const safeResult = replaceSensitiveWords(generated.content);
@@ -420,6 +579,7 @@ export async function generateForScene(
     storeName: profile.storeName,
     storeType: profile.storeType,
     targetCustomer: input.targetCustomer,
+    usedStoreProfile: Boolean(storeProfileSummary),
     userId: profile.id,
     userNote: "",
   });
@@ -449,6 +609,137 @@ async function requireAdminProfile() {
   const store = await getDataStore();
   const admin = adminId ? await store.getUserById(adminId) : null;
   return admin?.role === "admin" ? admin : null;
+}
+
+async function requireCustomerProfile() {
+  const cookieStore = await cookies();
+  const userId = cookieStore.get(sessionCookieName)?.value;
+  const store = await getDataStore();
+  const profile = userId ? await store.getUserById(userId) : null;
+  return profile?.role === "user" ? profile : null;
+}
+
+async function buildStoreProfileUploadInput({
+  file,
+  profile,
+  uploadBy,
+}: {
+  file: FormDataEntryValue | null;
+  profile: Profile;
+  uploadBy: StoreProfileUploadBy;
+}): Promise<UpsertStoreProfileInput> {
+  if (!(file instanceof File) || file.size === 0) {
+    throw new Error("请选择要上传的 PDF 文件。");
+  }
+
+  const validationMessage = validatePdfUpload({
+    name: file.name,
+    size: file.size,
+    type: file.type,
+  });
+  if (validationMessage) {
+    throw new Error(validationMessage);
+  }
+
+  const extractedText = await extractPdfTextFromBuffer(await file.arrayBuffer());
+  const trimmedText = trimExtractedTextForSummary(extractedText);
+  const generated = await generateStoreProfileSummary({
+    extractedText: trimmedText,
+    storeProfile: profile,
+  });
+  const safeSummary = replaceSensitiveWords(generated.content).content;
+
+  return {
+    extractedText: trimmedText,
+    extractedTextPreview: getExtractedTextPreview(trimmedText),
+    pdfFileName: file.name,
+    pdfFilePath: getVirtualPdfPath(profile.id, file.name),
+    profileSummary: safeSummary,
+    storeName: profile.storeName,
+    uploadBy,
+    userId: profile.id,
+  };
+}
+
+async function saveStoreProfileSummary(
+  userId: string,
+  profileSummary: string,
+  pathsToRevalidate: string[],
+): Promise<StoreProfileActionState> {
+  if (!userId) {
+    return { message: "保存失败，请稍后重试。", success: false };
+  }
+
+  const summary = profileSummary.trim();
+  if (!summary) {
+    return { message: "请先填写店铺资料摘要。", success: false };
+  }
+
+  const safeSummary = replaceSensitiveWords(summary).content;
+  try {
+    const updated = await (await getDataStore()).updateStoreProfileSummary(userId, safeSummary);
+    if (!updated) {
+      return { message: "保存失败，请稍后重试。", success: false };
+    }
+  } catch {
+    return { message: "保存失败，请稍后重试。", success: false };
+  }
+
+  for (const path of pathsToRevalidate) {
+    revalidatePath(path);
+  }
+  return { message: "店铺资料已保存，后续生成内容会优先参考这份资料。", success: true };
+}
+
+async function deleteStoreProfileForUser(userId: string, pathsToRevalidate: string[]): Promise<StoreProfileActionState> {
+  if (!userId) {
+    return { message: "删除失败，请稍后重试。", success: false };
+  }
+
+  try {
+    const deleted = await (await getDataStore()).deleteStoreProfile(userId);
+    if (!deleted) {
+      return { message: "删除失败，请稍后重试。", success: false };
+    }
+  } catch {
+    return { message: "删除失败，请稍后重试。", success: false };
+  }
+
+  for (const path of pathsToRevalidate) {
+    revalidatePath(path);
+  }
+  return { message: "店铺资料已删除。", success: true };
+}
+
+async function regenerateStoreProfileSummary(profile: Profile, pathsToRevalidate: string[]): Promise<StoreProfileActionState> {
+  const store = await getDataStore();
+  const record = await store.getStoreProfileByUserId(profile.id);
+  if (!record || !record.extractedText.trim()) {
+    return { message: "未找到可重新生成摘要的 PDF 文字。", success: false };
+  }
+
+  try {
+    const generated = await generateStoreProfileSummary({
+      extractedText: trimExtractedTextForSummary(record.extractedText),
+      storeProfile: profile,
+    });
+    const safeSummary = replaceSensitiveWords(generated.content).content;
+    const updated = await store.updateStoreProfileSummary(profile.id, safeSummary);
+    if (!updated) {
+      return { message: "重新生成失败，请稍后重试。", success: false };
+    }
+  } catch (error) {
+    return { message: getActionErrorMessage(error, "重新生成失败，请稍后重试。"), success: false };
+  }
+
+  for (const path of pathsToRevalidate) {
+    revalidatePath(path);
+  }
+  return { message: "资料摘要已重新生成。", success: true };
+}
+
+function getActionErrorMessage(error: unknown, fallback: string): string {
+  return error instanceof Error && error.message ? error.message : fallback;
 }
 
 function validateNewPassword(newPassword: string, confirmPassword: string): string {

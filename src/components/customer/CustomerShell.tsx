@@ -6,6 +6,7 @@ import type { Profile } from "@/lib/data/types";
 
 const navItems = [
   { href: "/app", label: "功能" },
+  { href: "/app/store-profile", label: "店铺资料" },
   { href: "/app/history", label: "历史" },
   { href: "/app/account", label: "账号" },
 ];

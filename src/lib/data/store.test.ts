@@ -212,6 +212,7 @@ describe("mock data store", () => {
       storeName: user.storeName,
       storeType: user.storeType,
       targetCustomer: "上班族",
+      usedStoreProfile: false,
       userId: user.id,
       userNote: "",
     });
@@ -257,6 +258,7 @@ describe("mock data store", () => {
       storeName: user.storeName,
       storeType: user.storeType,
       targetCustomer: "上班族",
+      usedStoreProfile: true,
       userId: user.id,
       userNote: "",
     });
@@ -265,6 +267,7 @@ describe("mock data store", () => {
       id: generation.id,
       projectName: "肩颈调理",
       result: "建议到店评估",
+      usedStoreProfile: true,
     });
     expect(store.getGenerationById("missing")).toBeNull();
   });
@@ -302,6 +305,7 @@ describe("mock data store", () => {
       storeName: user.storeName,
       storeType: user.storeType,
       targetCustomer: "上班族",
+      usedStoreProfile: false,
       userId: user.id,
       userNote: "",
     });
@@ -321,6 +325,7 @@ describe("mock data store", () => {
       storeName: user.storeName,
       storeType: user.storeType,
       targetCustomer: "附近居民",
+      usedStoreProfile: false,
       userId: user.id,
       userNote: "",
     });
@@ -331,5 +336,58 @@ describe("mock data store", () => {
     expect(store.deleteGeneration("missing")).toBe(false);
     expect(store.deleteAllGenerations()).toBe(1);
     expect(store.listGenerations()).toEqual([]);
+  });
+
+  it("keeps one editable store profile document per customer", () => {
+    const store = createMockStore();
+    const user = store.createUser({
+      cityArea: "上海浦东",
+      dailyLimit: 30,
+      disabled: false,
+      expiresAt: "2026-07-10",
+      mainProjects: "洁牙、儿童涂氟",
+      memberStatus: "paid",
+      password: "initial123",
+      phone: "13911112222",
+      planName: "standard_monthly",
+      role: "user",
+      storeAdvantages: "社区老客多",
+      storeName: "真如口腔",
+      storeType: "口腔门诊",
+    });
+
+    const first = store.upsertStoreProfile({
+      extractedText: "门店介绍文字",
+      extractedTextPreview: "门店介绍文字",
+      pdfFileName: "profile.pdf",
+      pdfFilePath: "d1://profile.pdf",
+      profileSummary: "【店铺基础信息】\n* 店铺名称：真如口腔",
+      storeName: user.storeName,
+      uploadBy: "customer",
+      userId: user.id,
+    });
+    const second = store.upsertStoreProfile({
+      extractedText: "新价目表文字",
+      extractedTextPreview: "新价目表文字",
+      pdfFileName: "new-profile.pdf",
+      pdfFilePath: "d1://new-profile.pdf",
+      profileSummary: "【核心项目】\n* 项目1：洁牙",
+      storeName: user.storeName,
+      uploadBy: "admin",
+      userId: user.id,
+    });
+
+    expect(second.id).toBe(first.id);
+    expect(store.getStoreProfileByUserId(user.id)).toMatchObject({
+      pdfFileName: "new-profile.pdf",
+      profileSummary: "【核心项目】\n* 项目1：洁牙",
+      uploadBy: "admin",
+    });
+    expect(store.listStoreProfiles()).toHaveLength(1);
+    expect(store.updateStoreProfileSummary(user.id, "人工补充后的摘要")).toMatchObject({
+      profileSummary: "人工补充后的摘要",
+    });
+    expect(store.deleteStoreProfile(user.id)).toBe(true);
+    expect(store.getStoreProfileByUserId(user.id)).toBeNull();
   });
 });

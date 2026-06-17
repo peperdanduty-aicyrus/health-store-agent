@@ -10,6 +10,8 @@ import type {
   Profile,
   OpeningApplication,
   OpeningApplicationStatus,
+  StoreProfileRecord,
+  UpsertStoreProfileInput,
   WorkbenchAccount,
   WorkbenchGenerationFilter,
   WorkbenchGenerationRecord,
@@ -28,7 +30,8 @@ type D1PreparedStatementLike = {
 
 type ProfileRow = Omit<Profile, "disabled"> & { disabled: number };
 type ApplicationRow = OpeningApplication;
-type GenerationRow = Omit<GenerationRecord, "copied"> & { copied: number };
+type GenerationRow = Omit<GenerationRecord, "copied" | "usedStoreProfile"> & { copied: number; usedStoreProfile?: number };
+type StoreProfileRow = StoreProfileRecord;
 type WorkbenchAccountRow = Omit<WorkbenchAccount, "disabled"> & { disabled: number };
 type WorkbenchGenerationRow = Omit<WorkbenchGenerationRecord, "copied"> & { copied: number };
 
@@ -49,9 +52,9 @@ export async function createD1Store(db: D1DatabaseLike) {
         .prepare(
           `INSERT INTO generations (
             id, userId, phone, storeName, storeType, planName, generationType, projectName,
-            targetCustomer, purpose, extraInfo, prompt, result, sensitiveCheckResult, copied,
+            targetCustomer, purpose, extraInfo, prompt, result, sensitiveCheckResult, copied, usedStoreProfile,
             userNote, modelProvider, modelName, createdAt
-          ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+          ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
         )
         .bind(
           record.id,
@@ -69,6 +72,7 @@ export async function createD1Store(db: D1DatabaseLike) {
           record.result,
           record.sensitiveCheckResult,
           record.copied ? 1 : 0,
+          record.usedStoreProfile ? 1 : 0,
           record.userNote,
           record.modelProvider,
           record.modelName,
@@ -176,6 +180,65 @@ export async function createD1Store(db: D1DatabaseLike) {
       return record;
     },
 
+    async upsertStoreProfile(input: UpsertStoreProfileInput): Promise<StoreProfileRecord> {
+      const now = new Date().toISOString();
+      const existing = await getStoreProfileByUserId(db, input.userId);
+      const record: StoreProfileRecord = existing
+        ? { ...existing, ...input, updatedAt: now }
+        : {
+            ...input,
+            id: makeId("store_profile"),
+            createdAt: now,
+            updatedAt: now,
+          };
+
+      if (existing) {
+        await db
+          .prepare(
+            `UPDATE store_profiles
+             SET storeName = ?, pdfFileName = ?, pdfFilePath = ?, extractedTextPreview = ?,
+                 extractedText = ?, profileSummary = ?, uploadBy = ?, updatedAt = ?
+             WHERE userId = ?`,
+          )
+          .bind(
+            record.storeName,
+            record.pdfFileName,
+            record.pdfFilePath,
+            record.extractedTextPreview,
+            record.extractedText,
+            record.profileSummary,
+            record.uploadBy,
+            record.updatedAt,
+            record.userId,
+          )
+          .run();
+      } else {
+        await db
+          .prepare(
+            `INSERT INTO store_profiles (
+              id, userId, storeName, pdfFileName, pdfFilePath, extractedTextPreview,
+              extractedText, profileSummary, uploadBy, createdAt, updatedAt
+            ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+          )
+          .bind(
+            record.id,
+            record.userId,
+            record.storeName,
+            record.pdfFileName,
+            record.pdfFilePath,
+            record.extractedTextPreview,
+            record.extractedText,
+            record.profileSummary,
+            record.uploadBy,
+            record.createdAt,
+            record.updatedAt,
+          )
+          .run();
+      }
+
+      return record;
+    },
+
     async deleteAllGenerations(): Promise<number> {
       const countRow = await db.prepare("SELECT COUNT(*) as count FROM generations").first<{ count: number }>();
       await db.prepare("DELETE FROM generations").run();
@@ -200,6 +263,15 @@ export async function createD1Store(db: D1DatabaseLike) {
       return true;
     },
 
+    async deleteStoreProfile(userId: string): Promise<boolean> {
+      const existing = await getStoreProfileByUserId(db, userId);
+      if (!existing) {
+        return false;
+      }
+      await db.prepare("DELETE FROM store_profiles WHERE userId = ?").bind(userId).run();
+      return true;
+    },
+
     async deleteWorkbenchGeneration(id: string): Promise<boolean> {
       const existing = await getWorkbenchGenerationById(db, id);
       if (!existing) {
@@ -211,6 +283,10 @@ export async function createD1Store(db: D1DatabaseLike) {
 
     async getGenerationById(id: string): Promise<GenerationRecord | null> {
       return getGenerationById(db, id);
+    },
+
+    async getStoreProfileByUserId(userId: string): Promise<StoreProfileRecord | null> {
+      return getStoreProfileByUserId(db, userId);
     },
 
     async getUserById(id: string): Promise<Profile | null> {
@@ -262,6 +338,13 @@ export async function createD1Store(db: D1DatabaseLike) {
         .all<GenerationRow>();
 
       return results.map(mapGeneration);
+    },
+
+    async listStoreProfiles(): Promise<StoreProfileRecord[]> {
+      const { results = [] } = await db
+        .prepare("SELECT * FROM store_profiles ORDER BY updatedAt DESC")
+        .all<StoreProfileRow>();
+      return results;
     },
 
     async listUsers(): Promise<Profile[]> {
@@ -327,6 +410,14 @@ export async function createD1Store(db: D1DatabaseLike) {
     async updateGenerationNote(id: string, userNote: string): Promise<GenerationRecord | null> {
       await db.prepare("UPDATE generations SET userNote = ? WHERE id = ?").bind(userNote, id).run();
       return getGenerationById(db, id);
+    },
+
+    async updateStoreProfileSummary(userId: string, profileSummary: string): Promise<StoreProfileRecord | null> {
+      await db
+        .prepare("UPDATE store_profiles SET profileSummary = ?, updatedAt = ? WHERE userId = ?")
+        .bind(profileSummary, new Date().toISOString(), userId)
+        .run();
+      return getStoreProfileByUserId(db, userId);
     },
 
     async updateOpeningApplicationStatus(
@@ -446,10 +537,31 @@ async function ensureSchema(db: D1DatabaseLike) {
         result TEXT NOT NULL,
         sensitiveCheckResult TEXT NOT NULL,
         copied INTEGER NOT NULL,
+        usedStoreProfile INTEGER NOT NULL DEFAULT 0,
         userNote TEXT NOT NULL,
         modelProvider TEXT NOT NULL,
         modelName TEXT NOT NULL,
         createdAt TEXT NOT NULL
+      )`,
+	    )
+	    .run();
+
+  await ensureColumn(db, "generations", "usedStoreProfile", "INTEGER NOT NULL DEFAULT 0");
+
+  await db
+    .prepare(
+      `CREATE TABLE IF NOT EXISTS store_profiles (
+        id TEXT PRIMARY KEY,
+        userId TEXT NOT NULL UNIQUE,
+        storeName TEXT NOT NULL,
+        pdfFileName TEXT NOT NULL,
+        pdfFilePath TEXT NOT NULL,
+        extractedTextPreview TEXT NOT NULL,
+        extractedText TEXT NOT NULL,
+        profileSummary TEXT NOT NULL,
+        uploadBy TEXT NOT NULL,
+        createdAt TEXT NOT NULL,
+        updatedAt TEXT NOT NULL
       )`,
     )
     .run();
@@ -578,6 +690,10 @@ async function getGenerationById(db: D1DatabaseLike, id: string): Promise<Genera
   return row ? mapGeneration(row) : null;
 }
 
+async function getStoreProfileByUserId(db: D1DatabaseLike, userId: string): Promise<StoreProfileRecord | null> {
+  return db.prepare("SELECT * FROM store_profiles WHERE userId = ?").bind(userId).first<StoreProfileRow>();
+}
+
 async function getWorkbenchGenerationById(db: D1DatabaseLike, id: string): Promise<WorkbenchGenerationRecord | null> {
   const row = await db
     .prepare("SELECT * FROM workbench_generations WHERE id = ?")
@@ -597,6 +713,7 @@ function mapGeneration(row: GenerationRow): GenerationRecord {
   return {
     ...row,
     copied: Boolean(row.copied),
+    usedStoreProfile: Boolean(row.usedStoreProfile),
   };
 }
 

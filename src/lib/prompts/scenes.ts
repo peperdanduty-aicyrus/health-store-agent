@@ -6,6 +6,7 @@ export type StoreProfileForPrompt = {
   cityArea: string;
   mainProjects: string;
   storeAdvantages: string;
+  storeProfileSummary?: string;
 };
 
 export type GenerationInput = {
@@ -29,11 +30,24 @@ export function buildScenePrompt(scene: SceneKey, storeProfile: StoreProfileForP
     `目标客户：${input.targetCustomer}`,
     `宣传目的：${input.purpose}`,
     `补充信息：${input.extraInfo || "无"}`,
+    getStoreProfileSummaryRule(storeProfile.storeProfileSummary),
     "基础要求：不夸大疗效，不承诺效果，不默认写电话、微信、详细地址。",
     "格式强约束：请输出可直接复制发布的干净中文文本。不要使用 Markdown 符号，不要使用 #、##、*、**、--- 等格式符号，不要输出 Markdown 表格符号。",
     "输出强约束：只输出一个合法 JSON 对象，不要在 JSON 前后添加解释、标题、代码块或多余文字。",
     getSceneTagRule(scene),
     `JSON 结构：${getOutputStructure(scene)}`,
+  ].join("\n");
+}
+
+function getStoreProfileSummaryRule(summary?: string): string {
+  if (!summary?.trim()) {
+    return "店铺资料摘要：未上传，按门店基础资料和本次填写信息生成。";
+  }
+
+  return [
+    "以下是该店铺的资料摘要，请优先结合这些真实资料生成内容，不要编造资料中没有的信息。",
+    summary.trim(),
+    "生成结果中不要出现“根据 PDF 资料”“根据店铺资料摘要”等说明，要自然融合到文案里。",
   ].join("\n");
 }
 

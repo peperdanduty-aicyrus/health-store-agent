@@ -36,6 +36,7 @@ export default async function AdminGenerationDetailPage({ params }: { params: Pr
         <Info label="宣传目的" value={record.purpose} />
         <Info label="生成时间" value={new Date(record.createdAt).toLocaleString("zh-CN")} />
         <Info label="复制状态" value={record.copied ? "已复制" : "未复制"} />
+        <Info label="引用店铺资料" value={record.usedStoreProfile ? "是" : "否"} />
         <Info label="模型" value={`${record.modelProvider}:${record.modelName}`} />
         <Info label="备注" value={record.userNote || "无"} />
         <Info label="补充信息" value={record.extraInfo || "无"} />

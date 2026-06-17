@@ -11,6 +11,8 @@ import type {
   Profile,
   OpeningApplication,
   OpeningApplicationStatus,
+  StoreProfileRecord,
+  UpsertStoreProfileInput,
   WorkbenchAccount,
   WorkbenchGenerationFilter,
   WorkbenchGenerationRecord,
@@ -22,16 +24,20 @@ export type DataStore = {
   createUser(input: CreateUserInput): Promise<Profile> | Profile;
   createWorkbenchAccount(input: CreateWorkbenchAccountInput): Promise<WorkbenchAccount> | WorkbenchAccount;
   createWorkbenchGeneration(input: CreateWorkbenchGenerationInput): Promise<WorkbenchGenerationRecord> | WorkbenchGenerationRecord;
+  upsertStoreProfile(input: UpsertStoreProfileInput): Promise<StoreProfileRecord> | StoreProfileRecord;
   deleteAllGenerations(): Promise<number> | number;
   deleteGeneration(id: string): Promise<boolean> | boolean;
   deleteOpeningApplication(id: string): Promise<boolean> | boolean;
+  deleteStoreProfile(userId: string): Promise<boolean> | boolean;
   deleteWorkbenchGeneration(id: string): Promise<boolean> | boolean;
   getGenerationById(id: string): Promise<GenerationRecord | null> | GenerationRecord | null;
+  getStoreProfileByUserId(userId: string): Promise<StoreProfileRecord | null> | StoreProfileRecord | null;
   getUserById(id: string): Promise<Profile | null> | Profile | null;
   getWorkbenchAccountById(id: string): Promise<WorkbenchAccount | null> | WorkbenchAccount | null;
   getWorkbenchGenerationById(id: string): Promise<WorkbenchGenerationRecord | null> | WorkbenchGenerationRecord | null;
   listApplications(): Promise<OpeningApplication[]> | OpeningApplication[];
   listGenerations(filter?: GenerationFilter): Promise<GenerationRecord[]> | GenerationRecord[];
+  listStoreProfiles(): Promise<StoreProfileRecord[]> | StoreProfileRecord[];
   listUsers(): Promise<Profile[]> | Profile[];
   listWorkbenchAccounts(): Promise<WorkbenchAccount[]> | WorkbenchAccount[];
   listWorkbenchGenerations(filter?: WorkbenchGenerationFilter): Promise<WorkbenchGenerationRecord[]> | WorkbenchGenerationRecord[];
@@ -40,6 +46,7 @@ export type DataStore = {
   markGenerationCopied(id: string): Promise<GenerationRecord | null> | GenerationRecord | null;
   markWorkbenchGenerationCopied(id: string): Promise<WorkbenchGenerationRecord | null> | WorkbenchGenerationRecord | null;
   updateGenerationNote(id: string, userNote: string): Promise<GenerationRecord | null> | GenerationRecord | null;
+  updateStoreProfileSummary(userId: string, profileSummary: string): Promise<StoreProfileRecord | null> | StoreProfileRecord | null;
   updateOpeningApplicationStatus(
     id: string,
     status: OpeningApplicationStatus,

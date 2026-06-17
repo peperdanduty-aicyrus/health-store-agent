@@ -15,7 +15,8 @@ export function HistoryList({ records }: { records: GenerationRecord[] }) {
             <p className="text-xs text-ink/50">{new Date(record.createdAt).toLocaleString("zh-CN")}</p>
           </div>
           <p className="mt-2 text-sm text-ink/62">
-            {sceneDefinitions[record.generationType].label} / {record.purpose} / {record.modelProvider}:{record.modelName}
+            {sceneDefinitions[record.generationType].label} / {record.purpose} / 店铺资料：
+            {record.usedStoreProfile ? "是" : "否"} / {record.modelProvider}:{record.modelName}
           </p>
           <pre className="mt-3 max-h-48 overflow-auto whitespace-pre-wrap rounded-md bg-paper p-3 text-sm leading-6 text-ink/72">{record.result}</pre>
         </article>

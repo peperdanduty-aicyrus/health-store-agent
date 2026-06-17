@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { generateContent } from "./provider";
+import { generateContent, generateStoreProfileSummary } from "./provider";
 import type { StoreProfileForPrompt } from "../prompts/scenes";
 
 const storeProfile: StoreProfileForPrompt = {
@@ -51,5 +51,18 @@ describe("AI provider layer", () => {
         userId: "user_standard_001",
       }),
     ).rejects.toThrow("AI_API_KEY is required");
+  });
+
+  it("generates a mock store profile summary without requiring an API key", async () => {
+    const result = await generateStoreProfileSummary({
+      extractedText: "门店介绍：主营肩颈调理、艾灸。",
+      provider: "mock",
+      storeProfile,
+    });
+
+    expect(result.provider).toBe("mock");
+    expect(result.content).toContain("【店铺基础信息】");
+    expect(result.content).toContain("春和中医馆");
+    expect(result.prompt).toContain("只输出一个合法 JSON 对象");
   });
 });
