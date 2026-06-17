@@ -4,7 +4,8 @@ export const extractedTextPreviewLimit = 2000;
 
 const invalidPdfMessage = "目前仅支持上传 PDF 文件。";
 const oversizedPdfMessage = "文件过大，请上传 2MB 以内的 PDF 资料。";
-export const unreadablePdfMessage = "当前文件可能是扫描件或图片版 PDF，暂时无法识别，请上传文字版 PDF。";
+export const emptyPdfMessage = "文件内容为空，请上传文字版 PDF。";
+export const unreadablePdfMessage = "当前 PDF 无法识别，可能是扫描件、图片版、加密文件或文件内容为空，请上传文字版 PDF。";
 
 export type PdfUploadMeta = {
   name: string;
@@ -14,6 +15,9 @@ export type PdfUploadMeta = {
 
 export function validatePdfUpload(file: PdfUploadMeta): string {
   const fileName = file.name.toLowerCase();
+  if (file.size <= 0) {
+    return emptyPdfMessage;
+  }
   if (file.type !== "application/pdf" && !fileName.endsWith(".pdf")) {
     return invalidPdfMessage;
   }

@@ -9,6 +9,7 @@ import {
   type StoreProfileActionState,
 } from "@/app/actions";
 import type { StoreProfileRecord } from "@/lib/data/types";
+import { getVisibleActionStates, validatePdfBeforeSubmit } from "./uploadClientGuards";
 
 const initialState: StoreProfileActionState = {
   message: "",
@@ -23,7 +24,7 @@ export function CustomerStoreProfilePanel({ record }: { record: StoreProfileReco
     regenerateCustomerStoreProfileSummary,
     initialState,
   );
-  const states = [uploadState, saveState, deleteState, regenerateState].filter((item) => item.message);
+  const states = getVisibleActionStates([uploadState, saveState, deleteState, regenerateState]);
 
   return (
     <div className="grid gap-5">
@@ -53,7 +54,9 @@ export function CustomerStoreProfilePanel({ record }: { record: StoreProfileReco
           <Info label="上传时间" value={record ? new Date(record.updatedAt).toLocaleString("zh-CN") : "暂无"} />
         </div>
 
-        <form action={uploadAction} className="mt-5 flex flex-col gap-3 sm:flex-row sm:items-end">
+        {!record ? <p className="mt-5 rounded-md bg-paper p-3 text-sm text-ink/62">当前还没有上传店铺资料。</p> : null}
+
+        <form action={uploadAction} className="mt-5 flex flex-col gap-3 sm:flex-row sm:items-end" onSubmit={validatePdfBeforeSubmit}>
           <label className="text-sm font-medium text-ink/75 sm:flex-1">
             上传 / 重新上传 PDF
             <input

@@ -349,24 +349,24 @@ export async function uploadCustomerStoreProfile(
   _previousState: StoreProfileActionState,
   formData: FormData,
 ): Promise<StoreProfileActionState> {
-  const profile = await requireCustomerProfile();
-  if (!profile) {
-    return { message: "请先登录后再上传。", success: false };
-  }
-
   try {
+    const profile = await requireCustomerProfile();
+    if (!profile) {
+      return { message: "请先登录后再上传。", success: false };
+    }
+
     const input = await buildStoreProfileUploadInput({
       file: formData.get("pdf"),
       profile,
       uploadBy: "customer",
     });
     await (await getDataStore()).upsertStoreProfile(input);
+    revalidatePath("/app/store-profile");
+    revalidatePath("/cyrus/store-profiles");
   } catch (error) {
-    return { message: getActionErrorMessage(error, "上传失败，请稍后重试。"), success: false };
+    return { message: getUploadErrorMessage(error), success: false };
   }
 
-  revalidatePath("/app/store-profile");
-  revalidatePath("/cyrus/store-profiles");
   return { message: "店铺资料已上传并生成摘要，后续生成内容会优先参考这份资料。", success: true };
 }
 
@@ -374,32 +374,32 @@ export async function uploadAdminStoreProfile(
   _previousState: StoreProfileActionState,
   formData: FormData,
 ): Promise<StoreProfileActionState> {
-  const admin = await requireAdminProfile();
-  if (!admin) {
-    return { message: "请先登录管理员后台。", success: false };
-  }
-
-  const store = await getDataStore();
-  const userId = String(formData.get("userId") || "");
-  const profile = userId ? await store.getUserById(userId) : null;
-  if (!profile || profile.role !== "user") {
-    return { message: "未找到客户账号。", success: false };
-  }
-
   try {
+    const admin = await requireAdminProfile();
+    if (!admin) {
+      return { message: "请先登录管理员后台。", success: false };
+    }
+
+    const store = await getDataStore();
+    const userId = String(formData.get("userId") || "");
+    const profile = userId ? await store.getUserById(userId) : null;
+    if (!profile || profile.role !== "user") {
+      return { message: "未找到客户账号。", success: false };
+    }
+
     const input = await buildStoreProfileUploadInput({
       file: formData.get("pdf"),
       profile,
       uploadBy: "admin",
     });
     await store.upsertStoreProfile(input);
+    revalidatePath("/cyrus/store-profiles");
+    revalidatePath(`/cyrus/store-profiles/${profile.id}`);
+    revalidatePath("/app/store-profile");
   } catch (error) {
-    return { message: getActionErrorMessage(error, "上传失败，请稍后重试。"), success: false };
+    return { message: getUploadErrorMessage(error), success: false };
   }
 
-  revalidatePath("/cyrus/store-profiles");
-  revalidatePath(`/cyrus/store-profiles/${profile.id}`);
-  revalidatePath("/app/store-profile");
   return { message: "已为客户上传店铺资料并生成摘要。", success: true };
 }
 
@@ -740,6 +740,18 @@ async function regenerateStoreProfileSummary(profile: Profile, pathsToRevalidate
 
 function getActionErrorMessage(error: unknown, fallback: string): string {
   return error instanceof Error && error.message ? error.message : fallback;
+}
+
+function getUploadErrorMessage(error: unknown): string {
+  const message = error instanceof Error ? error.message : "";
+  const userSafeMessages = [
+    "请选择要上传的 PDF 文件。",
+    "目前仅支持上传 PDF 文件。",
+    "文件过大，请上传 2MB 以内的 PDF 资料。",
+    "文件内容为空，请上传文字版 PDF。",
+    "当前 PDF 无法识别，可能是扫描件、图片版、加密文件或文件内容为空，请上传文字版 PDF。",
+  ];
+  return userSafeMessages.includes(message) ? message : "上传失败，请检查 PDF 是否为文字版，或稍后重试。";
 }
 
 function validateNewPassword(newPassword: string, confirmPassword: string): string {

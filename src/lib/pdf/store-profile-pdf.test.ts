@@ -7,6 +7,9 @@ import {
 
 describe("store profile PDF helpers", () => {
   it("rejects unsupported file types and oversized files", () => {
+    expect(validatePdfUpload({ name: "empty.pdf", size: 0, type: "application/pdf" })).toBe(
+      "文件内容为空，请上传文字版 PDF。",
+    );
     expect(validatePdfUpload({ name: "intro.docx", size: 1000, type: "application/vnd.openxmlformats-officedocument.wordprocessingml.document" })).toBe(
       "目前仅支持上传 PDF 文件。",
     );
@@ -31,7 +34,7 @@ describe("store profile PDF helpers", () => {
     const pdf = "%PDF-1.4\n1 0 obj << /Length 0 >> stream\nendstream endobj\n%%EOF";
 
     await expect(extractPdfTextFromBuffer(new TextEncoder().encode(pdf).buffer)).rejects.toThrow(
-      "当前文件可能是扫描件或图片版 PDF，暂时无法识别，请上传文字版 PDF。",
+      "当前 PDF 无法识别，可能是扫描件、图片版、加密文件或文件内容为空，请上传文字版 PDF。",
     );
   });
 

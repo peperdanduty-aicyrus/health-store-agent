@@ -9,6 +9,7 @@ import {
   type StoreProfileActionState,
 } from "@/app/actions";
 import type { Profile, StoreProfileRecord } from "@/lib/data/types";
+import { getVisibleActionStates, validatePdfBeforeSubmit } from "./uploadClientGuards";
 
 const initialState: StoreProfileActionState = {
   message: "",
@@ -20,7 +21,7 @@ export function AdminStoreProfilePanel({ customer, record }: { customer: Profile
   const [saveState, saveAction, savePending] = useActionState(saveAdminStoreProfileSummary, initialState);
   const [deleteState, deleteAction, deletePending] = useActionState(deleteAdminStoreProfile, initialState);
   const [regenerateState, regenerateAction, regeneratePending] = useActionState(regenerateAdminStoreProfileSummary, initialState);
-  const states = [uploadState, saveState, deleteState, regenerateState].filter((item) => item.message);
+  const states = getVisibleActionStates([uploadState, saveState, deleteState, regenerateState]);
 
   return (
     <div className="grid gap-5">
@@ -50,7 +51,9 @@ export function AdminStoreProfilePanel({ customer, record }: { customer: Profile
           <Info label="上传方" value={record ? (record.uploadBy === "admin" ? "管理员" : "客户") : "暂无"} />
         </div>
 
-        <form action={uploadAction} className="mt-5 flex flex-col gap-3 sm:flex-row sm:items-end">
+        {!record ? <p className="mt-5 rounded-md bg-paper p-3 text-sm text-ink/62">该客户暂未上传店铺资料。</p> : null}
+
+        <form action={uploadAction} className="mt-5 flex flex-col gap-3 sm:flex-row sm:items-end" onSubmit={validatePdfBeforeSubmit}>
           <input name="userId" type="hidden" value={customer.id} />
           <label className="text-sm font-medium text-ink/75 sm:flex-1">
             帮客户上传 / 重新上传 PDF
