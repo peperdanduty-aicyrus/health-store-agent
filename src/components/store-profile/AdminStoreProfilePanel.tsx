@@ -1,15 +1,14 @@
 "use client";
 
-import { useActionState } from "react";
+import { useActionState, useEffect, useState } from "react";
 import {
   deleteAdminStoreProfile,
-  regenerateAdminStoreProfileSummary,
-  saveAdminStoreProfileSummary,
-  uploadAdminStoreProfile,
+  saveAdminStoreProfileText,
+  summarizeAdminStoreProfileText,
   type StoreProfileActionState,
 } from "@/app/actions";
 import type { Profile, StoreProfileRecord } from "@/lib/data/types";
-import { getVisibleActionStates, validatePdfBeforeSubmit } from "./uploadClientGuards";
+import { getVisibleActionStates } from "./textProfileState";
 
 const initialState: StoreProfileActionState = {
   message: "",
@@ -17,11 +16,27 @@ const initialState: StoreProfileActionState = {
 };
 
 export function AdminStoreProfilePanel({ customer, record }: { customer: Profile; record: StoreProfileRecord | null }) {
-  const [uploadState, uploadAction, uploadPending] = useActionState(uploadAdminStoreProfile, initialState);
-  const [saveState, saveAction, savePending] = useActionState(saveAdminStoreProfileSummary, initialState);
+  const [rawText, setRawText] = useState(record?.extractedText || "");
+  const [profileSummary, setProfileSummary] = useState(record?.profileSummary || "");
+  const [summarizeState, summarizeAction, summarizePending] = useActionState(summarizeAdminStoreProfileText, initialState);
+  const [saveState, saveAction, savePending] = useActionState(saveAdminStoreProfileText, initialState);
   const [deleteState, deleteAction, deletePending] = useActionState(deleteAdminStoreProfile, initialState);
-  const [regenerateState, regenerateAction, regeneratePending] = useActionState(regenerateAdminStoreProfileSummary, initialState);
-  const states = getVisibleActionStates([uploadState, saveState, deleteState, regenerateState]);
+  const states = getVisibleActionStates([summarizeState, saveState, deleteState]);
+
+  useEffect(() => {
+    setRawText(record?.extractedText || "");
+    setProfileSummary(record?.profileSummary || "");
+  }, [record?.id, record?.updatedAt, record?.extractedText, record?.profileSummary]);
+
+  useEffect(() => {
+    const latest = [summarizeState, saveState].find((state) => state.success && (state.rawText || state.profileSummary));
+    if (latest?.rawText !== undefined) {
+      setRawText(latest.rawText);
+    }
+    if (latest?.profileSummary !== undefined) {
+      setProfileSummary(latest.profileSummary);
+    }
+  }, [summarizeState, saveState]);
 
   return (
     <div className="grid gap-5">
@@ -32,7 +47,7 @@ export function AdminStoreProfilePanel({ customer, record }: { customer: Profile
           <Info label="手机号" value={customer.phone} />
           <Info label="门店类型" value={customer.storeType} />
           <Info label="城市区域" value={customer.cityArea || "未填写"} />
-          <Info label="资料状态" value={record ? "已上传" : "未上传"} />
+          <Info label="资料状态" value={record ? "已填写" : "未填写"} />
         </div>
         {states.map((state) => (
           <p
@@ -46,89 +61,78 @@ export function AdminStoreProfilePanel({ customer, record }: { customer: Profile
 
       <section className="rounded-lg border border-ink/10 bg-white p-5 shadow-sm">
         <div className="grid gap-3 sm:grid-cols-3">
-          <Info label="PDF 文件" value={record?.pdfFileName || "暂无"} />
-          <Info label="上传时间" value={record ? new Date(record.updatedAt).toLocaleString("zh-CN") : "暂无"} />
-          <Info label="上传方" value={record ? (record.uploadBy === "admin" ? "管理员" : "客户") : "暂无"} />
+          <Info label="原始资料" value={record?.extractedText ? "已填写" : "未填写"} />
+          <Info label="更新时间" value={record ? new Date(record.updatedAt).toLocaleString("zh-CN") : "暂无"} />
+          <Info label="填写方" value={record ? (record.uploadBy === "admin" ? "管理员" : "客户") : "暂无"} />
         </div>
 
-        {!record ? <p className="mt-5 rounded-md bg-paper p-3 text-sm text-ink/62">该客户暂未上传店铺资料。</p> : null}
+        {!record ? <p className="mt-5 rounded-md bg-paper p-3 text-sm text-ink/62">该客户暂未填写店铺资料。</p> : null}
 
-        <form action={uploadAction} className="mt-5 flex flex-col gap-3 sm:flex-row sm:items-end" onSubmit={validatePdfBeforeSubmit}>
-          <input name="userId" type="hidden" value={customer.id} />
-          <label className="text-sm font-medium text-ink/75 sm:flex-1">
-            帮客户上传 / 重新上传 PDF
-            <input
-              accept="application/pdf,.pdf"
-              className="mt-2 min-h-11 w-full rounded-md border border-ink/12 bg-paper px-3 py-2 text-sm outline-none focus:border-moss"
-              name="pdf"
-              required
-              type="file"
+        <div className="mt-5 grid gap-4">
+          <label className="text-sm font-medium text-ink/75">
+            店铺原始资料
+            <textarea
+              className="mt-2 min-h-[220px] w-full rounded-md border border-ink/12 bg-paper p-4 text-sm leading-7 text-ink outline-none focus:border-moss"
+              onChange={(event) => setRawText(event.target.value)}
+              placeholder="粘贴门店简介、项目、价格、服务流程、门店优势、注意事项等。"
+              value={rawText}
             />
           </label>
-          <button className="min-h-11 rounded-md bg-ink px-5 text-sm font-medium text-white disabled:opacity-60" disabled={uploadPending} type="submit">
-            {uploadPending ? "上传中" : record ? "重新上传 PDF" : "上传 PDF"}
-          </button>
-        </form>
-      </section>
-
-      <section className="rounded-lg border border-ink/10 bg-white p-5 shadow-sm">
-        <div className="flex flex-wrap items-center justify-between gap-3">
-          <div>
-            <p className="text-sm font-semibold text-coral">资料摘要</p>
-            <h3 className="mt-1 text-xl font-semibold text-ink">管理员可代客户修改</h3>
-          </div>
-          {record ? (
-            <div className="flex flex-wrap gap-2">
-              <form
-                action={regenerateAction}
-                onSubmit={(event) => {
-                  if (!window.confirm("重新生成会覆盖当前资料摘要，确定继续吗？")) {
-                    event.preventDefault();
-                  }
-                }}
-              >
-                <input name="userId" type="hidden" value={customer.id} />
-                <button
-                  className="min-h-10 rounded-md border border-ink/10 bg-paper px-3 text-sm font-medium text-ink disabled:opacity-60"
-                  disabled={regeneratePending}
-                  type="submit"
-                >
-                  重新生成资料摘要
-                </button>
-              </form>
-              <form
-                action={deleteAction}
-                onSubmit={(event) => {
-                  if (!window.confirm("确定要删除当前店铺资料吗？删除后，后续生成内容将不再自动引用本店资料。")) {
-                    event.preventDefault();
-                  }
-                }}
-              >
-                <input name="userId" type="hidden" value={customer.id} />
-                <button
-                  className="min-h-10 rounded-md border border-coral/30 bg-white px-3 text-sm font-medium text-coral disabled:opacity-60"
-                  disabled={deletePending}
-                  type="submit"
-                >
-                  删除资料
-                </button>
-              </form>
-            </div>
-          ) : null}
+          <label className="text-sm font-medium text-ink/75">
+            店铺资料摘要
+            <textarea
+              className="mt-2 min-h-[360px] w-full rounded-md border border-ink/12 bg-paper p-4 text-sm leading-7 text-ink outline-none focus:border-moss"
+              onChange={(event) => setProfileSummary(event.target.value)}
+              placeholder="点击 AI整理资料摘要 后会自动生成，也可以手动填写。"
+              value={profileSummary}
+            />
+          </label>
         </div>
 
-        <form action={saveAction} className="mt-4">
-          <input name="userId" type="hidden" value={customer.id} />
-          <textarea
-            className="min-h-[420px] w-full rounded-md border border-ink/12 bg-paper p-4 text-sm leading-7 text-ink outline-none focus:border-moss"
-            defaultValue={record?.profileSummary || ""}
-            name="profileSummary"
-            placeholder="可手动填写或上传 PDF 后自动生成摘要。"
-          />
-          <button className="mt-4 min-h-11 rounded-md bg-moss px-5 text-sm font-medium text-white disabled:opacity-60" disabled={savePending} type="submit">
-            保存摘要
-          </button>
-        </form>
+        <div className="mt-4 flex flex-wrap gap-2">
+          <form action={summarizeAction}>
+            <input name="userId" type="hidden" value={customer.id} />
+            <input name="rawText" type="hidden" value={rawText} />
+            <button
+              className="min-h-10 rounded-md border border-ink/10 bg-paper px-3 text-sm font-medium text-ink disabled:opacity-60"
+              disabled={summarizePending}
+              type="submit"
+            >
+              {summarizePending ? "整理中" : "AI整理资料摘要"}
+            </button>
+          </form>
+          <form action={saveAction}>
+            <input name="userId" type="hidden" value={customer.id} />
+            <input name="rawText" type="hidden" value={rawText} />
+            <input name="profileSummary" type="hidden" value={profileSummary} />
+            <button
+              className="min-h-10 rounded-md bg-moss px-4 text-sm font-medium text-white disabled:opacity-60"
+              disabled={savePending}
+              type="submit"
+            >
+              保存资料
+            </button>
+          </form>
+          {record ? (
+            <form
+              action={deleteAction}
+              onSubmit={(event) => {
+                if (!window.confirm("确定要删除当前店铺资料吗？删除后，后续生成内容将不再自动引用本店资料。")) {
+                  event.preventDefault();
+                }
+              }}
+            >
+              <input name="userId" type="hidden" value={customer.id} />
+              <button
+                className="min-h-10 rounded-md border border-coral/30 bg-white px-3 text-sm font-medium text-coral disabled:opacity-60"
+                disabled={deletePending}
+                type="submit"
+              >
+                删除资料
+              </button>
+            </form>
+          ) : null}
+        </div>
       </section>
     </div>
   );

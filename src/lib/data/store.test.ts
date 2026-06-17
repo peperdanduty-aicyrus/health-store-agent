@@ -359,8 +359,8 @@ describe("mock data store", () => {
     const first = store.upsertStoreProfile({
       extractedText: "门店介绍文字",
       extractedTextPreview: "门店介绍文字",
-      pdfFileName: "profile.pdf",
-      pdfFilePath: "d1://profile.pdf",
+      pdfFileName: "",
+      pdfFilePath: "",
       profileSummary: "【店铺基础信息】\n* 店铺名称：真如口腔",
       storeName: user.storeName,
       uploadBy: "customer",
@@ -369,8 +369,8 @@ describe("mock data store", () => {
     const second = store.upsertStoreProfile({
       extractedText: "新价目表文字",
       extractedTextPreview: "新价目表文字",
-      pdfFileName: "new-profile.pdf",
-      pdfFilePath: "d1://new-profile.pdf",
+      pdfFileName: "",
+      pdfFilePath: "",
       profileSummary: "【核心项目】\n* 项目1：洁牙",
       storeName: user.storeName,
       uploadBy: "admin",
@@ -379,7 +379,8 @@ describe("mock data store", () => {
 
     expect(second.id).toBe(first.id);
     expect(store.getStoreProfileByUserId(user.id)).toMatchObject({
-      pdfFileName: "new-profile.pdf",
+      extractedText: "新价目表文字",
+      pdfFileName: "",
       profileSummary: "【核心项目】\n* 项目1：洁牙",
       uploadBy: "admin",
     });

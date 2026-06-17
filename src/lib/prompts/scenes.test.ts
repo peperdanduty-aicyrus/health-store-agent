@@ -67,7 +67,7 @@ describe("scene prompt builder", () => {
     expect(prompt).toContain("以下是该店铺的资料摘要");
     expect(prompt).toContain("老客复购多");
     expect(prompt).toContain("不要编造资料中没有的信息");
-    expect(prompt).toContain("生成结果中不要出现“根据 PDF 资料”");
-    expect(prompt).not.toContain("PDF 原文");
+    expect(prompt).toContain("生成结果中不要出现“根据店铺资料”");
+    expect(prompt).not.toContain("PDF");
   });
 });

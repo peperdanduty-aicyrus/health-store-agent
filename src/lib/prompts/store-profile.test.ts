@@ -19,6 +19,8 @@ describe("store profile summary prompt", () => {
     expect(prompt).toContain("【店铺基础信息】");
     expect(prompt).toContain("【可用于生成文案的店铺关键词】");
     expect(prompt).toContain("800-1500 字以内");
+    expect(prompt).toContain("商户粘贴的店铺原始资料如下：");
+    expect(prompt).not.toContain("PDF");
     expect(prompt).toContain("根治、治愈、保证有效、百分百、第一、最有效、永久、无副作用、包好、神医、祖传秘方、治疗疾病");
   });
 });

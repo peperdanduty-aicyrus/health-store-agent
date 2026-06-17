@@ -32,7 +32,7 @@ export default async function AdminStoreProfilesPage({
         <div className="flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
           <div>
             <p className="text-sm font-semibold text-coral">客户店铺资料管理</p>
-            <h2 className="mt-1 text-2xl font-semibold text-ink">查看和代上传客户资料</h2>
+            <h2 className="mt-1 text-2xl font-semibold text-ink">查看和代填客户资料</h2>
           </div>
           <form className="flex gap-2" action="/cyrus/store-profiles">
             <input
@@ -72,7 +72,7 @@ export default async function AdminStoreProfilesPage({
                   <p className="text-ink/68">{customer.phone}</p>
                   <p className="text-ink/68">{customer.storeType}</p>
                   <p className={record ? "font-medium text-moss" : "font-medium text-ink/50"}>
-                    {record ? `已上传：${record.pdfFileName}` : "未上传"}
+                    {record ? `已填写：${new Date(record.updatedAt).toLocaleDateString("zh-CN")}` : "未填写"}
                   </p>
                   <Link className="rounded-md border border-ink/10 bg-paper px-3 py-2 text-center text-sm font-medium text-ink" href={`/cyrus/store-profiles/${customer.id}`}>
                     管理

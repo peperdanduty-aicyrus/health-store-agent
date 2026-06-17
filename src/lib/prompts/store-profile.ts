@@ -7,7 +7,7 @@ export type StoreProfileSummaryPromptInput = {
 
 export function buildStoreProfileSummaryPrompt({ extractedText, storeProfile }: StoreProfileSummaryPromptInput): string {
   return [
-    "请把下面的本地健康门店 PDF 提取文字总结成一份店铺资料摘要。",
+    "请把下面的本地健康门店资料整理成一份店铺资料摘要。",
     "只输出一个合法 JSON 对象，不要输出 Markdown 代码块，不要在 JSON 前后添加解释。",
     'JSON 结构：{"summary":"店铺资料摘要正文"}',
     "摘要正文控制在 800-1500 字以内，保留真实、可用于后续生成文案的信息。",
@@ -62,7 +62,7 @@ export function buildStoreProfileSummaryPrompt({ extractedText, storeProfile }: 
     `主营项目：${storeProfile.mainProjects || "未填写"}`,
     `门店优势：${storeProfile.storeAdvantages || "未填写"}`,
     "",
-    "PDF 提取文字如下：",
+    "商户粘贴的店铺原始资料如下：",
     extractedText,
   ].join("\n");
 }

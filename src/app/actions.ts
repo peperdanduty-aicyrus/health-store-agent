@@ -10,13 +10,6 @@ import type { CreateUserInput, Profile, StoreProfileUploadBy, UpsertStoreProfile
 import type { PlanName } from "@/lib/domain/plans";
 import { canGenerate } from "@/lib/domain/permissions";
 import type { SceneKey } from "@/lib/domain/scenes";
-import {
-  extractPdfTextFromBuffer,
-  getExtractedTextPreview,
-  getVirtualPdfPath,
-  trimExtractedTextForSummary,
-  validatePdfUpload,
-} from "@/lib/pdf/store-profile-pdf";
 import { replaceSensitiveWords } from "@/lib/safety/sensitive-words";
 
 export type OpeningApplicationFormState = {
@@ -53,6 +46,8 @@ export type DeleteActionState = {
 
 export type StoreProfileActionState = {
   message: string;
+  profileSummary?: string;
+  rawText?: string;
   success: boolean;
 };
 
@@ -345,32 +340,73 @@ export async function changeOwnPassword(
   redirect(profile.role === "admin" ? "/cyrus" : "/login");
 }
 
-export async function uploadCustomerStoreProfile(
+export async function saveCustomerStoreProfileText(
   _previousState: StoreProfileActionState,
   formData: FormData,
 ): Promise<StoreProfileActionState> {
   try {
     const profile = await requireCustomerProfile();
     if (!profile) {
-      return { message: "请先登录后再上传。", success: false };
+      return { message: "请先登录后再保存。", success: false };
     }
 
-    const input = await buildStoreProfileUploadInput({
-      file: formData.get("pdf"),
+    const input = await buildStoreProfileTextInput({
       profile,
+      profileSummary: String(formData.get("profileSummary") || ""),
+      rawText: String(formData.get("rawText") || ""),
       uploadBy: "customer",
     });
     await (await getDataStore()).upsertStoreProfile(input);
     revalidatePath("/app/store-profile");
     revalidatePath("/cyrus/store-profiles");
+    return {
+      message: "店铺资料已保存，后续生成内容会优先参考这份资料。",
+      profileSummary: input.profileSummary,
+      rawText: input.extractedText,
+      success: true,
+    };
   } catch (error) {
-    return { message: getUploadErrorMessage(error), success: false };
+    return { message: getTextProfileErrorMessage(error, "保存失败，请稍后重试。"), success: false };
   }
-
-  return { message: "店铺资料已上传并生成摘要，后续生成内容会优先参考这份资料。", success: true };
 }
 
-export async function uploadAdminStoreProfile(
+export async function summarizeCustomerStoreProfileText(
+  _previousState: StoreProfileActionState,
+  formData: FormData,
+): Promise<StoreProfileActionState> {
+  try {
+    const profile = await requireCustomerProfile();
+    if (!profile) {
+      return { message: "请先登录后再操作。", success: false };
+    }
+
+    const rawText = normalizeStoreProfileText(String(formData.get("rawText") || ""));
+    if (!rawText) {
+      return { message: "请先填写店铺原始资料。", success: false };
+    }
+
+    const summary = await summarizeRawStoreProfileText(profile, rawText);
+    const input = await buildStoreProfileTextInput({
+      profile,
+      profileSummary: summary,
+      rawText,
+      uploadBy: "customer",
+    });
+    await (await getDataStore()).upsertStoreProfile(input);
+    revalidatePath("/app/store-profile");
+    revalidatePath("/cyrus/store-profiles");
+    return {
+      message: "AI 已整理资料摘要，可继续编辑后保存。",
+      profileSummary: input.profileSummary,
+      rawText: input.extractedText,
+      success: true,
+    };
+  } catch (error) {
+    return { message: getTextProfileErrorMessage(error, "AI整理失败，请稍后重试，或先手动填写资料摘要。"), success: false };
+  }
+}
+
+export async function saveAdminStoreProfileText(
   _previousState: StoreProfileActionState,
   formData: FormData,
 ): Promise<StoreProfileActionState> {
@@ -387,20 +423,69 @@ export async function uploadAdminStoreProfile(
       return { message: "未找到客户账号。", success: false };
     }
 
-    const input = await buildStoreProfileUploadInput({
-      file: formData.get("pdf"),
+    const input = await buildStoreProfileTextInput({
       profile,
+      profileSummary: String(formData.get("profileSummary") || ""),
+      rawText: String(formData.get("rawText") || ""),
       uploadBy: "admin",
     });
     await store.upsertStoreProfile(input);
     revalidatePath("/cyrus/store-profiles");
     revalidatePath(`/cyrus/store-profiles/${profile.id}`);
     revalidatePath("/app/store-profile");
+    return {
+      message: "已保存客户店铺资料。",
+      profileSummary: input.profileSummary,
+      rawText: input.extractedText,
+      success: true,
+    };
   } catch (error) {
-    return { message: getUploadErrorMessage(error), success: false };
+    return { message: getTextProfileErrorMessage(error, "保存失败，请稍后重试。"), success: false };
   }
+}
 
-  return { message: "已为客户上传店铺资料并生成摘要。", success: true };
+export async function summarizeAdminStoreProfileText(
+  _previousState: StoreProfileActionState,
+  formData: FormData,
+): Promise<StoreProfileActionState> {
+  try {
+    const admin = await requireAdminProfile();
+    if (!admin) {
+      return { message: "请先登录管理员后台。", success: false };
+    }
+
+    const store = await getDataStore();
+    const userId = String(formData.get("userId") || "");
+    const profile = userId ? await store.getUserById(userId) : null;
+    if (!profile || profile.role !== "user") {
+      return { message: "未找到客户账号。", success: false };
+    }
+
+    const rawText = normalizeStoreProfileText(String(formData.get("rawText") || ""));
+    if (!rawText) {
+      return { message: "请先填写店铺原始资料。", success: false };
+    }
+
+    const summary = await summarizeRawStoreProfileText(profile, rawText);
+    const input = await buildStoreProfileTextInput({
+      profile,
+      profileSummary: summary,
+      rawText,
+      uploadBy: "admin",
+    });
+    await store.upsertStoreProfile(input);
+    revalidatePath("/cyrus/store-profiles");
+    revalidatePath(`/cyrus/store-profiles/${profile.id}`);
+    revalidatePath("/app/store-profile");
+    return {
+      message: "AI 已整理客户资料摘要，可继续编辑后保存。",
+      profileSummary: input.profileSummary,
+      rawText: input.extractedText,
+      success: true,
+    };
+  } catch (error) {
+    return { message: getTextProfileErrorMessage(error, "AI整理失败，请稍后重试，或先手动填写资料摘要。"), success: false };
+  }
 }
 
 export async function saveCustomerStoreProfileSummary(
@@ -619,46 +704,52 @@ async function requireCustomerProfile() {
   return profile?.role === "user" ? profile : null;
 }
 
-async function buildStoreProfileUploadInput({
-  file,
+async function buildStoreProfileTextInput({
   profile,
+  profileSummary,
+  rawText,
   uploadBy,
 }: {
-  file: FormDataEntryValue | null;
   profile: Profile;
+  profileSummary: string;
+  rawText: string;
   uploadBy: StoreProfileUploadBy;
 }): Promise<UpsertStoreProfileInput> {
-  if (!(file instanceof File) || file.size === 0) {
-    throw new Error("请选择要上传的 PDF 文件。");
+  const normalizedRawText = normalizeStoreProfileText(rawText);
+  const normalizedSummary = normalizeStoreProfileText(profileSummary);
+  if (!normalizedRawText && !normalizedSummary) {
+    throw new Error("请先填写店铺原始资料或店铺资料摘要。");
   }
 
-  const validationMessage = validatePdfUpload({
-    name: file.name,
-    size: file.size,
-    type: file.type,
-  });
-  if (validationMessage) {
-    throw new Error(validationMessage);
-  }
-
-  const extractedText = await extractPdfTextFromBuffer(await file.arrayBuffer());
-  const trimmedText = trimExtractedTextForSummary(extractedText);
-  const generated = await generateStoreProfileSummary({
-    extractedText: trimmedText,
-    storeProfile: profile,
-  });
-  const safeSummary = replaceSensitiveWords(generated.content).content;
+  const safeSummary = replaceSensitiveWords(normalizedSummary).content;
 
   return {
-    extractedText: trimmedText,
-    extractedTextPreview: getExtractedTextPreview(trimmedText),
-    pdfFileName: file.name,
-    pdfFilePath: getVirtualPdfPath(profile.id, file.name),
+    extractedText: normalizedRawText,
+    extractedTextPreview: normalizedRawText.slice(0, 2000),
+    pdfFileName: "",
+    pdfFilePath: "",
     profileSummary: safeSummary,
     storeName: profile.storeName,
     uploadBy,
     userId: profile.id,
   };
+}
+
+async function summarizeRawStoreProfileText(profile: Profile, rawText: string): Promise<string> {
+  const generated = await generateStoreProfileSummary({
+    extractedText: rawText.slice(0, 12000),
+    storeProfile: profile,
+  });
+  return replaceSensitiveWords(generated.content).content;
+}
+
+function normalizeStoreProfileText(text: string): string {
+  return text
+    .replace(/\u0000/g, "")
+    .replace(/[ \t]+/g, " ")
+    .replace(/\s*\n\s*/g, "\n")
+    .replace(/\n{3,}/g, "\n\n")
+    .trim();
 }
 
 async function saveStoreProfileSummary(
@@ -715,12 +806,12 @@ async function regenerateStoreProfileSummary(profile: Profile, pathsToRevalidate
   const store = await getDataStore();
   const record = await store.getStoreProfileByUserId(profile.id);
   if (!record || !record.extractedText.trim()) {
-    return { message: "未找到可重新生成摘要的 PDF 文字。", success: false };
+    return { message: "未找到可重新整理摘要的店铺原始资料。", success: false };
   }
 
   try {
     const generated = await generateStoreProfileSummary({
-      extractedText: trimExtractedTextForSummary(record.extractedText),
+      extractedText: normalizeStoreProfileText(record.extractedText).slice(0, 12000),
       storeProfile: profile,
     });
     const safeSummary = replaceSensitiveWords(generated.content).content;
@@ -742,16 +833,17 @@ function getActionErrorMessage(error: unknown, fallback: string): string {
   return error instanceof Error && error.message ? error.message : fallback;
 }
 
-function getUploadErrorMessage(error: unknown): string {
+function getTextProfileErrorMessage(error: unknown, fallback: string): string {
   const message = error instanceof Error ? error.message : "";
   const userSafeMessages = [
-    "请选择要上传的 PDF 文件。",
-    "目前仅支持上传 PDF 文件。",
-    "文件过大，请上传 2MB 以内的 PDF 资料。",
-    "文件内容为空，请上传文字版 PDF。",
-    "当前 PDF 无法识别，可能是扫描件、图片版、加密文件或文件内容为空，请上传文字版 PDF。",
+    "请先填写店铺原始资料。",
+    "请先填写店铺原始资料或店铺资料摘要。",
+    "请先登录后再保存。",
+    "请先登录后再操作。",
+    "请先登录管理员后台。",
+    "未找到客户账号。",
   ];
-  return userSafeMessages.includes(message) ? message : "上传失败，请检查 PDF 是否为文字版，或稍后重试。";
+  return userSafeMessages.includes(message) ? message : fallback;
 }
 
 function validateNewPassword(newPassword: string, confirmPassword: string): string {

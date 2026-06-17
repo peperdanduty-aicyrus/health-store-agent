@@ -47,7 +47,7 @@ function getStoreProfileSummaryRule(summary?: string): string {
   return [
     "以下是该店铺的资料摘要，请优先结合这些真实资料生成内容，不要编造资料中没有的信息。",
     summary.trim(),
-    "生成结果中不要出现“根据 PDF 资料”“根据店铺资料摘要”等说明，要自然融合到文案里。",
+    "生成结果中不要出现“根据店铺资料”“根据店铺资料摘要”等说明，要自然融合到文案里。",
   ].join("\n");
 }
 
