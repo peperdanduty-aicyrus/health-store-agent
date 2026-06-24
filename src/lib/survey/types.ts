@@ -376,3 +376,134 @@ export type UpsertSurveyFollowUpInput = {
   storeId: string;
   warningId?: string;
 };
+
+export type SurveyAiReportStatus = "failed" | "retrying" | "succeeded";
+export type SurveyReportType = "full_analysis" | "leadership_brief" | "oral_briefing" | "store_analysis";
+export type SurveyReportStatus = "archived" | "confirmed" | "draft" | "pending_review";
+export type SurveyReportVersionKind = "ai_original" | "manual_edit";
+
+export type SurveyAiReportJob = {
+  createdAt: string;
+  createdBy: string;
+  desensitizedInputJson: string;
+  elapsedMs: number | null;
+  errorCode: string | null;
+  errorMessage: string | null;
+  id: string;
+  inputSnapshotJson: string;
+  mallId: string;
+  modelName: string;
+  modelProvider: string;
+  outputText: string;
+  periodMonth: string;
+  reportType: SurveyReportType;
+  status: SurveyAiReportStatus;
+  tokenUsageJson: string;
+};
+
+export type SurveyReportSnapshotRecord = {
+  createdAt: string;
+  createdBy: string;
+  desensitizedInputJson: string;
+  id: string;
+  mallId: string;
+  periodMonth: string;
+  reportType: SurveyReportType;
+  snapshotJson: string;
+};
+
+export type SurveyReport = {
+  confirmedVersionId: string | null;
+  createdAt: string;
+  currentVersionId: string | null;
+  id: string;
+  mallId: string;
+  periodMonth: string;
+  reportType: SurveyReportType;
+  snapshotId: string;
+  status: SurveyReportStatus;
+  title: string;
+  updatedAt: string;
+};
+
+export type SurveyReportVersion = {
+  aiRawJson: string | null;
+  contentJson: string;
+  createdAt: string;
+  createdBy: string;
+  id: string;
+  reportId: string;
+  title: string;
+  versionKind: SurveyReportVersionKind;
+  versionNo: number;
+  versionNote: string;
+};
+
+export type CreateSurveyAiReportJobInput = {
+  createdBy: string;
+  desensitizedInputJson: string;
+  elapsedMs?: number | null;
+  errorCode?: string | null;
+  errorMessage?: string | null;
+  inputSnapshotJson: string;
+  mallId: string;
+  modelName: string;
+  modelProvider: string;
+  outputText?: string;
+  periodMonth: string;
+  reportType: SurveyReportType;
+  status: SurveyAiReportStatus;
+  tokenUsageJson?: string;
+};
+
+export type CreateSurveyReportSnapshotInput = {
+  createdBy: string;
+  desensitizedInputJson: string;
+  mallId: string;
+  periodMonth: string;
+  reportType: SurveyReportType;
+  snapshotJson: string;
+};
+
+export type CreateSurveyReportWithVersionInput = {
+  actorId: string;
+  aiRawJson: string;
+  contentJson: string;
+  jobId: string;
+  mallId: string;
+  periodMonth: string;
+  reportType: SurveyReportType;
+  snapshotId: string;
+  title: string;
+  versionNote: string;
+};
+
+export type CreateSurveyReportVersionInput = {
+  actorId: string;
+  aiRawJson?: string | null;
+  contentJson: string;
+  reportId: string;
+  title: string;
+  versionKind: SurveyReportVersionKind;
+  versionNote: string;
+};
+
+export type ConfirmSurveyReportVersionInput = {
+  actorId: string;
+  reportId: string;
+  versionId: string;
+};
+
+export type SetSurveyReportCurrentVersionInput = {
+  actorId: string;
+  reportId: string;
+  versionId: string;
+};
+
+export type UpdateConfirmedSurveyReportVersionInput = {
+  actorId: string;
+  contentJson: string;
+  reportId: string;
+  title: string;
+  versionId: string;
+};

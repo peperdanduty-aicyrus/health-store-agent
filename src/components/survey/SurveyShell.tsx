@@ -13,6 +13,7 @@ const navItems = [
   { href: "/yingyun/stores", label: "门店" },
   { href: "/yingyun/follow-ups", label: "跟进" },
   { href: "/yingyun/periods", label: "月份" },
+  { href: "/yingyun/reports", label: "报告" },
   { href: "/yingyun/exports", label: "导出" },
   { href: "/cyrus", label: "总后台" },
 ];

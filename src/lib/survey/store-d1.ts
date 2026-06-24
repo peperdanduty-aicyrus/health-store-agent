@@ -7,10 +7,16 @@ import { buildStoreSearchText, normalizeStoreSearchText } from "./search";
 import { defaultSurveyCategoryNames, surveyTestAccounts, type CreateSurveyStaffAccountInput } from "./store";
 import { importFinalSurveyStores } from "./real-store-data";
 import type {
+  ConfirmSurveyReportVersionInput,
+  CreateSurveyAiReportJobInput,
   SurveyAuditLog,
+  SurveyAiReportJob,
   SurveyBrand,
   SurveyCategory,
   CreateSurveyMerchantSubmissionInput,
+  CreateSurveyReportSnapshotInput,
+  CreateSurveyReportVersionInput,
+  CreateSurveyReportWithVersionInput,
   SurveyFollowUp,
   SurveyMall,
   SurveyMerchantSubmission,
@@ -18,6 +24,10 @@ import type {
   SurveyMonthlyPeriod,
   SurveyPeerSalesRow,
   SurveyPosSale,
+  SurveyReport,
+  SurveyReportSnapshotRecord,
+  SurveyReportVersion,
+  SetSurveyReportCurrentVersionInput,
   SurveyStaffAccount,
   SurveyStore,
   SurveyStoreAlias,
@@ -28,6 +38,7 @@ import type {
   UpsertSurveyFollowUpInput,
   UpsertSurveyPeriodInput,
   UpsertSurveyPosSaleInput,
+  UpdateConfirmedSurveyReportVersionInput,
   UpdateSurveyMerchantSubmissionInput,
 } from "./types";
 
@@ -228,6 +239,158 @@ export async function createSurveyD1Store(db: SurveyD1DatabaseLike) {
     async listAuditLogs(): Promise<SurveyAuditLog[]> {
       const rows = await db.prepare("SELECT * FROM survey_audit_logs ORDER BY created_at DESC LIMIT 50").all<Record<string, unknown>>();
       return (rows.results ?? []).map(mapAuditLog);
+    },
+
+    async createSurveyAiReportJob(input: CreateSurveyAiReportJobInput): Promise<SurveyAiReportJob> {
+      const job: SurveyAiReportJob = {
+        createdAt: new Date().toISOString(),
+        createdBy: input.createdBy,
+        desensitizedInputJson: input.desensitizedInputJson,
+        elapsedMs: input.elapsedMs ?? null,
+        errorCode: input.errorCode ?? null,
+        errorMessage: input.errorMessage ?? null,
+        id: makeId("survey_ai_job"),
+        inputSnapshotJson: input.inputSnapshotJson,
+        mallId: input.mallId,
+        modelName: input.modelName,
+        modelProvider: input.modelProvider,
+        outputText: input.outputText ?? "",
+        periodMonth: input.periodMonth,
+        reportType: input.reportType,
+        status: input.status,
+        tokenUsageJson: input.tokenUsageJson ?? "{}",
+      };
+      await db.prepare(
+        `INSERT INTO survey_ai_report_jobs
+         (id, mall_id, period_month, report_type, input_snapshot_json, desensitized_input_json, output_text, model_provider, model_name, status, error_message, created_by, created_at, elapsed_ms, error_code, token_usage_json)
+         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+      ).bind(job.id, job.mallId, job.periodMonth, job.reportType, job.inputSnapshotJson, job.desensitizedInputJson, job.outputText, job.modelProvider, job.modelName, job.status, job.errorMessage, job.createdBy, job.createdAt, job.elapsedMs, job.errorCode, job.tokenUsageJson).run();
+      await this.createAuditLog({ action: `ai_report.${job.status}`, actorId: input.createdBy, actorType: "staff", detailJson: JSON.stringify({ errorCode: job.errorCode, reportType: job.reportType }), mallId: input.mallId, targetId: job.id, targetType: "ai_report_job" });
+      return job;
+    },
+
+    async listSurveyAiReportJobs(mallId: string): Promise<SurveyAiReportJob[]> {
+      const rows = await db.prepare("SELECT * FROM survey_ai_report_jobs WHERE mall_id = ? ORDER BY created_at DESC").bind(mallId).all<Record<string, unknown>>();
+      return (rows.results ?? []).map(mapAiReportJob);
+    },
+
+    async createSurveyReportSnapshot(input: CreateSurveyReportSnapshotInput): Promise<SurveyReportSnapshotRecord> {
+      const snapshot: SurveyReportSnapshotRecord = {
+        createdAt: new Date().toISOString(),
+        createdBy: input.createdBy,
+        desensitizedInputJson: input.desensitizedInputJson,
+        id: makeId("survey_report_snapshot"),
+        mallId: input.mallId,
+        periodMonth: input.periodMonth,
+        reportType: input.reportType,
+        snapshotJson: input.snapshotJson,
+      };
+      await db.prepare(
+        `INSERT INTO survey_report_snapshots (id, mall_id, period_month, report_type, snapshot_json, desensitized_input_json, created_by, created_at)
+         VALUES (?, ?, ?, ?, ?, ?, ?, ?)`,
+      ).bind(snapshot.id, snapshot.mallId, snapshot.periodMonth, snapshot.reportType, snapshot.snapshotJson, snapshot.desensitizedInputJson, snapshot.createdBy, snapshot.createdAt).run();
+      return snapshot;
+    },
+
+    async createSurveyReportWithVersion(input: CreateSurveyReportWithVersionInput): Promise<SurveyReport> {
+      const now = new Date().toISOString();
+      const report: SurveyReport = {
+        confirmedVersionId: null,
+        createdAt: now,
+        currentVersionId: null,
+        id: makeId("survey_report"),
+        mallId: input.mallId,
+        periodMonth: input.periodMonth,
+        reportType: input.reportType,
+        snapshotId: input.snapshotId,
+        status: "draft",
+        title: input.title,
+        updatedAt: now,
+      };
+      await db.prepare(
+        `INSERT INTO survey_reports (id, mall_id, period_month, report_type, snapshot_id, title, status, current_version_id, confirmed_version_id, created_at, updated_at)
+         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+      ).bind(report.id, report.mallId, report.periodMonth, report.reportType, report.snapshotId, report.title, report.status, report.currentVersionId, report.confirmedVersionId, report.createdAt, report.updatedAt).run();
+      const version = await this.createSurveyReportVersion({
+        actorId: input.actorId,
+        aiRawJson: input.aiRawJson,
+        contentJson: input.contentJson,
+        reportId: report.id,
+        title: input.title,
+        versionKind: "ai_original",
+        versionNote: input.versionNote,
+      });
+      await db.prepare("UPDATE survey_reports SET current_version_id = ?, updated_at = ? WHERE id = ?").bind(version.id, version.createdAt, report.id).run();
+      report.currentVersionId = version.id;
+      await this.createAuditLog({ action: "report.create", actorId: input.actorId, actorType: "staff", detailJson: JSON.stringify({ jobId: input.jobId, reportType: input.reportType }), mallId: input.mallId, targetId: report.id, targetType: "report" });
+      return report;
+    },
+
+    async createSurveyReportVersion(input: CreateSurveyReportVersionInput): Promise<SurveyReportVersion> {
+      const report = await this.getSurveyReport(input.reportId);
+      if (!report) throw new Error("报告不存在。");
+      const row = await db.prepare("SELECT COALESCE(MAX(version_no), 0) AS max_no FROM survey_report_versions WHERE report_id = ?").bind(input.reportId).first<Record<string, unknown>>();
+      const versionNo = Number(row?.max_no ?? 0) + 1;
+      const version: SurveyReportVersion = {
+        aiRawJson: input.aiRawJson ?? null,
+        contentJson: input.contentJson,
+        createdAt: new Date().toISOString(),
+        createdBy: input.actorId,
+        id: makeId("survey_report_version"),
+        reportId: input.reportId,
+        title: input.title,
+        versionKind: input.versionKind,
+        versionNo,
+        versionNote: input.versionNote,
+      };
+      await db.prepare(
+        `INSERT INTO survey_report_versions (id, report_id, version_no, version_kind, title, content_json, ai_raw_json, version_note, created_by, created_at)
+         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+      ).bind(version.id, version.reportId, version.versionNo, version.versionKind, version.title, version.contentJson, version.aiRawJson, version.versionNote, version.createdBy, version.createdAt).run();
+      await db.prepare("UPDATE survey_reports SET current_version_id = ?, title = ?, status = ?, updated_at = ? WHERE id = ?").bind(version.id, version.title, version.versionKind === "manual_edit" ? "pending_review" : report.status, version.createdAt, report.id).run();
+      await this.createAuditLog({ action: "report.version.create", actorId: input.actorId, actorType: "staff", detailJson: JSON.stringify({ versionKind: version.versionKind, versionNo: version.versionNo }), mallId: report.mallId, targetId: version.id, targetType: "report_version" });
+      return version;
+    },
+
+    async confirmSurveyReportVersion(input: ConfirmSurveyReportVersionInput): Promise<SurveyReport> {
+      const report = await this.getSurveyReport(input.reportId);
+      const versions = await this.listSurveyReportVersions(input.reportId);
+      const version = versions.find((item) => item.id === input.versionId);
+      if (!report || !version) throw new Error("报告版本不存在。");
+      const now = new Date().toISOString();
+      await db.prepare("UPDATE survey_reports SET confirmed_version_id = ?, current_version_id = ?, title = ?, status = 'confirmed', updated_at = ? WHERE id = ?").bind(version.id, version.id, version.title, now, report.id).run();
+      await this.createAuditLog({ action: "report.confirm", actorId: input.actorId, actorType: "staff", detailJson: JSON.stringify({ versionId: input.versionId }), mallId: report.mallId, targetId: report.id, targetType: "report" });
+      return (await this.getSurveyReport(input.reportId))!;
+    },
+
+    async setSurveyReportCurrentVersion(input: SetSurveyReportCurrentVersionInput): Promise<SurveyReport> {
+      const report = await this.getSurveyReport(input.reportId);
+      const versions = await this.listSurveyReportVersions(input.reportId);
+      const version = versions.find((item) => item.id === input.versionId);
+      if (!report || !version) throw new Error("报告版本不存在。");
+      const now = new Date().toISOString();
+      await db.prepare("UPDATE survey_reports SET current_version_id = ?, title = ?, updated_at = ? WHERE id = ?").bind(version.id, version.title, now, report.id).run();
+      await this.createAuditLog({ action: "report.current.set", actorId: input.actorId, actorType: "staff", detailJson: JSON.stringify({ versionId: input.versionId }), mallId: report.mallId, targetId: report.id, targetType: "report" });
+      return (await this.getSurveyReport(input.reportId))!;
+    },
+
+    async updateConfirmedSurveyReportVersion(_input: UpdateConfirmedSurveyReportVersionInput): Promise<SurveyReportVersion> {
+      throw new Error("已确认版本不得直接覆盖，请创建新的人工编辑版本。");
+    },
+
+    async listSurveyReports(mallId: string): Promise<SurveyReport[]> {
+      const rows = await db.prepare("SELECT * FROM survey_reports WHERE mall_id = ? ORDER BY updated_at DESC").bind(mallId).all<Record<string, unknown>>();
+      return (rows.results ?? []).map(mapReport);
+    },
+
+    async getSurveyReport(id: string): Promise<SurveyReport | null> {
+      const row = await db.prepare("SELECT * FROM survey_reports WHERE id = ?").bind(id).first<Record<string, unknown>>();
+      return row ? mapReport(row) : null;
+    },
+
+    async listSurveyReportVersions(reportId: string): Promise<SurveyReportVersion[]> {
+      const rows = await db.prepare("SELECT * FROM survey_report_versions WHERE report_id = ? ORDER BY version_no").bind(reportId).all<Record<string, unknown>>();
+      return (rows.results ?? []).map(mapReportVersion);
     },
 
     async listPeerSalesRows(submissionId: string) {
@@ -691,10 +854,26 @@ async function ensureSurveyRuntimeSchema(db: SurveyD1DatabaseLike) {
     `CREATE TABLE IF NOT EXISTS survey_period_details (period_id TEXT PRIMARY KEY, opened_by TEXT, opened_at TEXT, closed_by TEXT, closed_at TEXT, reopened_until TEXT, updated_at TEXT NOT NULL)`,
     `CREATE TABLE IF NOT EXISTS survey_follow_up_records (id TEXT PRIMARY KEY, mall_id TEXT NOT NULL, store_id TEXT NOT NULL, period_month TEXT, follow_up_date TEXT, follow_up_method TEXT, follow_up_subject TEXT, store_feedback TEXT, next_action TEXT, next_follow_up_date TEXT, status TEXT NOT NULL, owner_account_id TEXT, created_at TEXT NOT NULL, updated_at TEXT NOT NULL)`,
     `CREATE TABLE IF NOT EXISTS survey_follow_up_details (follow_up_id TEXT PRIMARY KEY, warning_id TEXT, owner_name TEXT, deleted INTEGER NOT NULL DEFAULT 0, updated_by TEXT, updated_at TEXT NOT NULL)`,
+    `CREATE TABLE IF NOT EXISTS survey_ai_report_jobs (id TEXT PRIMARY KEY, mall_id TEXT NOT NULL, period_month TEXT, report_type TEXT NOT NULL, input_snapshot_json TEXT, desensitized_input_json TEXT, output_text TEXT, model_provider TEXT, model_name TEXT, status TEXT NOT NULL, error_message TEXT, created_by TEXT, created_at TEXT NOT NULL, elapsed_ms INTEGER, error_code TEXT, token_usage_json TEXT)`,
+    `CREATE TABLE IF NOT EXISTS survey_report_snapshots (id TEXT PRIMARY KEY, mall_id TEXT NOT NULL, period_month TEXT NOT NULL, report_type TEXT NOT NULL, snapshot_json TEXT NOT NULL, desensitized_input_json TEXT NOT NULL, created_by TEXT NOT NULL, created_at TEXT NOT NULL)`,
+    `CREATE TABLE IF NOT EXISTS survey_reports (id TEXT PRIMARY KEY, mall_id TEXT NOT NULL, period_month TEXT NOT NULL, report_type TEXT NOT NULL, snapshot_id TEXT NOT NULL, title TEXT NOT NULL, status TEXT NOT NULL, current_version_id TEXT, confirmed_version_id TEXT, created_at TEXT NOT NULL, updated_at TEXT NOT NULL)`,
+    `CREATE TABLE IF NOT EXISTS survey_report_versions (id TEXT PRIMARY KEY, report_id TEXT NOT NULL, version_no INTEGER NOT NULL, version_kind TEXT NOT NULL, title TEXT NOT NULL, content_json TEXT NOT NULL, ai_raw_json TEXT, version_note TEXT, created_by TEXT NOT NULL, created_at TEXT NOT NULL, UNIQUE (report_id, version_no))`,
+    `CREATE INDEX IF NOT EXISTS idx_survey_reports_mall_month ON survey_reports (mall_id, period_month, report_type)`,
     `CREATE UNIQUE INDEX IF NOT EXISTS idx_survey_merchant_submissions_store_month ON survey_merchant_submissions (store_id, period_month)`,
   ];
   for (const statement of statements) {
     await db.prepare(statement).run();
+  }
+  await addColumnIfMissing(db, "survey_ai_report_jobs", "elapsed_ms", "INTEGER");
+  await addColumnIfMissing(db, "survey_ai_report_jobs", "error_code", "TEXT");
+  await addColumnIfMissing(db, "survey_ai_report_jobs", "token_usage_json", "TEXT");
+}
+
+async function addColumnIfMissing(db: SurveyD1DatabaseLike, table: string, column: string, type: string) {
+  const columns = await db.prepare(`PRAGMA table_info(${table})`).all<Record<string, unknown>>();
+  const exists = (columns.results ?? []).some((row) => String(row.name) === column);
+  if (!exists) {
+    await db.prepare(`ALTER TABLE ${table} ADD COLUMN ${column} ${type}`).run();
   }
 }
 
@@ -1207,6 +1386,58 @@ function mapFollowUp(row: Record<string, unknown>): SurveyFollowUp {
     storeId: String(row.store_id || ""),
     updatedAt: String(row.updated_at || ""),
     warningId: String(row.warning_id || ""),
+  };
+}
+
+function mapAiReportJob(row: Record<string, unknown>): SurveyAiReportJob {
+  return {
+    createdAt: String(row.created_at || ""),
+    createdBy: String(row.created_by || ""),
+    desensitizedInputJson: String(row.desensitized_input_json || ""),
+    elapsedMs: row.elapsed_ms === null || row.elapsed_ms === undefined ? null : Number(row.elapsed_ms),
+    errorCode: row.error_code ? String(row.error_code) : null,
+    errorMessage: row.error_message ? String(row.error_message) : null,
+    id: String(row.id || ""),
+    inputSnapshotJson: String(row.input_snapshot_json || ""),
+    mallId: String(row.mall_id || ""),
+    modelName: String(row.model_name || ""),
+    modelProvider: String(row.model_provider || ""),
+    outputText: String(row.output_text || ""),
+    periodMonth: String(row.period_month || ""),
+    reportType: String(row.report_type || "leadership_brief") as SurveyAiReportJob["reportType"],
+    status: String(row.status || "failed") as SurveyAiReportJob["status"],
+    tokenUsageJson: String(row.token_usage_json || "{}"),
+  };
+}
+
+function mapReport(row: Record<string, unknown>): SurveyReport {
+  return {
+    confirmedVersionId: row.confirmed_version_id ? String(row.confirmed_version_id) : null,
+    createdAt: String(row.created_at || ""),
+    currentVersionId: row.current_version_id ? String(row.current_version_id) : null,
+    id: String(row.id || ""),
+    mallId: String(row.mall_id || ""),
+    periodMonth: String(row.period_month || ""),
+    reportType: String(row.report_type || "leadership_brief") as SurveyReport["reportType"],
+    snapshotId: String(row.snapshot_id || ""),
+    status: String(row.status || "draft") as SurveyReport["status"],
+    title: String(row.title || ""),
+    updatedAt: String(row.updated_at || ""),
+  };
+}
+
+function mapReportVersion(row: Record<string, unknown>): SurveyReportVersion {
+  return {
+    aiRawJson: row.ai_raw_json ? String(row.ai_raw_json) : null,
+    contentJson: String(row.content_json || "{}"),
+    createdAt: String(row.created_at || ""),
+    createdBy: String(row.created_by || ""),
+    id: String(row.id || ""),
+    reportId: String(row.report_id || ""),
+    title: String(row.title || ""),
+    versionKind: String(row.version_kind || "manual_edit") as SurveyReportVersion["versionKind"],
+    versionNo: Number(row.version_no || 0),
+    versionNote: String(row.version_note || ""),
   };
 }
 

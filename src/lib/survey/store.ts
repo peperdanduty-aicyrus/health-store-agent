@@ -6,7 +6,13 @@ import { hashSurveyPassword, verifySurveyPassword } from "./password";
 import { importFinalSurveyStores } from "./real-store-data";
 import type {
   CreateSurveyMerchantSubmissionInput,
+  ConfirmSurveyReportVersionInput,
+  CreateSurveyAiReportJobInput,
+  CreateSurveyReportSnapshotInput,
+  CreateSurveyReportVersionInput,
+  CreateSurveyReportWithVersionInput,
   SurveyAuditLog,
+  SurveyAiReportJob,
   SurveyBrand,
   SurveyCategory,
   SurveyFollowUp,
@@ -16,6 +22,10 @@ import type {
   SurveyMonthlyPeriod,
   SurveyPeerSalesRow,
   SurveyPosSale,
+  SurveyReport,
+  SurveyReportSnapshotRecord,
+  SurveyReportVersion,
+  SetSurveyReportCurrentVersionInput,
   SurveyStaffAccount,
   SurveyStore,
   SurveyStoreAlias,
@@ -26,6 +36,7 @@ import type {
   UpsertSurveyFollowUpInput,
   UpsertSurveyPeriodInput,
   UpsertSurveyPosSaleInput,
+  UpdateConfirmedSurveyReportVersionInput,
   UpdateSurveyMerchantSubmissionInput,
 } from "./types";
 import { computeMonthlyMetric, evaluateStoreWarnings } from "./analytics";
@@ -41,6 +52,10 @@ type SurveyState = {
   periods: SurveyMonthlyPeriod[];
   peerSalesRows: Array<SurveyPeerSalesRow & { id: string; submissionId: string; sortOrder: number }>;
   posSales: SurveyPosSale[];
+  reportJobs: SurveyAiReportJob[];
+  reportSnapshots: SurveyReportSnapshotRecord[];
+  reportVersions: SurveyReportVersion[];
+  reports: SurveyReport[];
   malls: SurveyMall[];
   staffAccounts: SurveyStaffAccount[];
   stores: SurveyStore[];
@@ -107,6 +122,10 @@ export function createSurveyMemoryStore(initialState?: Partial<SurveyState>) {
     periods: clone(initialState?.periods ?? []),
     peerSalesRows: clone(initialState?.peerSalesRows ?? []),
     posSales: clone(initialState?.posSales ?? []),
+    reportJobs: clone(initialState?.reportJobs ?? []),
+    reportSnapshots: clone(initialState?.reportSnapshots ?? []),
+    reportVersions: clone(initialState?.reportVersions ?? []),
+    reports: clone(initialState?.reports ?? []),
     malls: clone(initialState?.malls ?? [defaultMall]),
     staffAccounts: clone(initialState?.staffAccounts ?? []),
     stores: clone(initialState?.stores ?? []),
@@ -264,6 +283,143 @@ export function createSurveyMemoryStore(initialState?: Partial<SurveyState>) {
 
     async listAuditLogs(): Promise<SurveyAuditLog[]> {
       return [...state.auditLogs];
+    },
+
+    async createSurveyAiReportJob(input: CreateSurveyAiReportJobInput): Promise<SurveyAiReportJob> {
+      const job: SurveyAiReportJob = {
+        createdAt: new Date().toISOString(),
+        createdBy: input.createdBy,
+        desensitizedInputJson: input.desensitizedInputJson,
+        elapsedMs: input.elapsedMs ?? null,
+        errorCode: input.errorCode ?? null,
+        errorMessage: input.errorMessage ?? null,
+        id: makeId("survey_ai_job", state.reportJobs.length + 1),
+        inputSnapshotJson: input.inputSnapshotJson,
+        mallId: input.mallId,
+        modelName: input.modelName,
+        modelProvider: input.modelProvider,
+        outputText: input.outputText ?? "",
+        periodMonth: input.periodMonth,
+        reportType: input.reportType,
+        status: input.status,
+        tokenUsageJson: input.tokenUsageJson ?? "{}",
+      };
+      state.reportJobs.unshift(job);
+      await this.createAuditLog({ action: `ai_report.${job.status}`, actorId: input.createdBy, actorType: "staff", detailJson: JSON.stringify({ errorCode: job.errorCode, reportType: job.reportType }), mallId: input.mallId, targetId: job.id, targetType: "ai_report_job" });
+      return clone(job);
+    },
+
+    async listSurveyAiReportJobs(mallId: string): Promise<SurveyAiReportJob[]> {
+      return state.reportJobs.filter((item) => item.mallId === mallId).map(clone);
+    },
+
+    async createSurveyReportSnapshot(input: CreateSurveyReportSnapshotInput): Promise<SurveyReportSnapshotRecord> {
+      const snapshot: SurveyReportSnapshotRecord = {
+        createdAt: new Date().toISOString(),
+        createdBy: input.createdBy,
+        desensitizedInputJson: input.desensitizedInputJson,
+        id: makeId("survey_report_snapshot", state.reportSnapshots.length + 1),
+        mallId: input.mallId,
+        periodMonth: input.periodMonth,
+        reportType: input.reportType,
+        snapshotJson: input.snapshotJson,
+      };
+      state.reportSnapshots.unshift(snapshot);
+      return clone(snapshot);
+    },
+
+    async createSurveyReportWithVersion(input: CreateSurveyReportWithVersionInput): Promise<SurveyReport> {
+      const timestamp = new Date().toISOString();
+      const report: SurveyReport = {
+        confirmedVersionId: null,
+        createdAt: timestamp,
+        currentVersionId: null,
+        id: makeId("survey_report", state.reports.length + 1),
+        mallId: input.mallId,
+        periodMonth: input.periodMonth,
+        reportType: input.reportType,
+        snapshotId: input.snapshotId,
+        status: "draft",
+        title: input.title,
+        updatedAt: timestamp,
+      };
+      state.reports.unshift(report);
+      const version = await this.createSurveyReportVersion({
+        actorId: input.actorId,
+        aiRawJson: input.aiRawJson,
+        contentJson: input.contentJson,
+        reportId: report.id,
+        title: input.title,
+        versionKind: "ai_original",
+        versionNote: input.versionNote,
+      });
+      report.currentVersionId = version.id;
+      await this.createAuditLog({ action: "report.create", actorId: input.actorId, actorType: "staff", detailJson: JSON.stringify({ jobId: input.jobId, reportType: input.reportType }), mallId: input.mallId, targetId: report.id, targetType: "report" });
+      return clone(report);
+    },
+
+    async createSurveyReportVersion(input: CreateSurveyReportVersionInput): Promise<SurveyReportVersion> {
+      const report = state.reports.find((item) => item.id === input.reportId);
+      if (!report) throw new Error("报告不存在。");
+      const version: SurveyReportVersion = {
+        aiRawJson: input.aiRawJson ?? null,
+        contentJson: input.contentJson,
+        createdAt: new Date().toISOString(),
+        createdBy: input.actorId,
+        id: makeId("survey_report_version", state.reportVersions.length + 1),
+        reportId: input.reportId,
+        title: input.title,
+        versionKind: input.versionKind,
+        versionNo: state.reportVersions.filter((item) => item.reportId === input.reportId).length + 1,
+        versionNote: input.versionNote,
+      };
+      state.reportVersions.push(version);
+      report.currentVersionId = version.id;
+      report.title = input.title;
+      report.status = input.versionKind === "manual_edit" ? "pending_review" : report.status;
+      report.updatedAt = version.createdAt;
+      await this.createAuditLog({ action: "report.version.create", actorId: input.actorId, actorType: "staff", detailJson: JSON.stringify({ versionKind: version.versionKind, versionNo: version.versionNo }), mallId: report.mallId, targetId: version.id, targetType: "report_version" });
+      return clone(version);
+    },
+
+    async confirmSurveyReportVersion(input: ConfirmSurveyReportVersionInput): Promise<SurveyReport> {
+      const report = state.reports.find((item) => item.id === input.reportId);
+      const version = state.reportVersions.find((item) => item.id === input.versionId && item.reportId === input.reportId);
+      if (!report || !version) throw new Error("报告版本不存在。");
+      report.confirmedVersionId = input.versionId;
+      report.currentVersionId = input.versionId;
+      report.status = "confirmed";
+      report.title = version.title;
+      report.updatedAt = new Date().toISOString();
+      await this.createAuditLog({ action: "report.confirm", actorId: input.actorId, actorType: "staff", detailJson: JSON.stringify({ versionId: input.versionId }), mallId: report.mallId, targetId: report.id, targetType: "report" });
+      return clone(report);
+    },
+
+    async setSurveyReportCurrentVersion(input: SetSurveyReportCurrentVersionInput): Promise<SurveyReport> {
+      const report = state.reports.find((item) => item.id === input.reportId);
+      const version = state.reportVersions.find((item) => item.id === input.versionId && item.reportId === input.reportId);
+      if (!report || !version) throw new Error("报告版本不存在。");
+      report.currentVersionId = input.versionId;
+      report.title = version.title;
+      report.updatedAt = new Date().toISOString();
+      await this.createAuditLog({ action: "report.current.set", actorId: input.actorId, actorType: "staff", detailJson: JSON.stringify({ versionId: input.versionId }), mallId: report.mallId, targetId: report.id, targetType: "report" });
+      return clone(report);
+    },
+
+    async updateConfirmedSurveyReportVersion(_input: UpdateConfirmedSurveyReportVersionInput): Promise<SurveyReportVersion> {
+      throw new Error("已确认版本不得直接覆盖，请创建新的人工编辑版本。");
+    },
+
+    async listSurveyReports(mallId: string): Promise<SurveyReport[]> {
+      return state.reports.filter((item) => item.mallId === mallId).map(clone);
+    },
+
+    async getSurveyReport(id: string): Promise<SurveyReport | null> {
+      return state.reports.find((item) => item.id === id) ?? null;
+    },
+
+    async listSurveyReportVersions(reportId: string): Promise<SurveyReportVersion[]> {
+      return state.reportVersions.filter((item) => item.reportId === reportId).map(clone).sort((left, right) => left.versionNo - right.versionNo);
     },
 
     async listPeerSalesRows(submissionId: string) {
