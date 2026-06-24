@@ -1,5 +1,7 @@
 .next/
 .open-next/
+.wrangler/
+.stage4_package/
 node_modules/
 dist/
 coverage/
