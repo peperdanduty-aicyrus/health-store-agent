@@ -55,6 +55,5 @@ function main() {
 }
 
 function dumpTable(table: string) {
-  return execFileSync("sqlite3", [sourceDb, `.mode insert ${table}\nSELECT * FROM ${table};`], { encoding: "utf8" });
+  return execFileSync("sqlite3", ["-cmd", `.mode insert ${table}`, sourceDb, `SELECT * FROM ${table};`], { encoding: "utf8" });
 }
-
