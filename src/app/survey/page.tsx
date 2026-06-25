@@ -8,6 +8,7 @@ import { ClearSurveyDraft } from "@/components/survey/ClearSurveyDraft";
 import { MerchantSurveyForm } from "@/components/survey/MerchantSurveyForm";
 import { getSurveyFieldDefinitionsForCategory, getCurrentSurveyPeriod, surveyStoredFormFieldToDefinition } from "@/lib/survey/merchant-form";
 import { verifyMerchantEditToken } from "@/lib/survey/merchant-token";
+import { filterPublicSurveyStores, isPublicSurveyStoreAllowed } from "@/lib/survey/pilot";
 import { checkSurveyRateLimit, getSurveyClientKey } from "@/lib/survey/rate-limit";
 import { getSurveyStore } from "@/lib/survey/repository";
 
@@ -38,7 +39,7 @@ export default async function SurveyMerchantPage({
 
   if (params.storeId) {
     const selectedStore = await store.getStoreById(params.storeId);
-    if (!selectedStore || selectedStore.status !== "active") {
+    if (!selectedStore || !isPublicSurveyStoreAllowed(selectedStore)) {
       return <Shell><EmptyState message="暂未找到您的店铺，请联系营运人员核对或添加门店资料。" /></Shell>;
     }
 
@@ -108,7 +109,11 @@ export default async function SurveyMerchantPage({
   const searchAllowed = params.q
     ? checkSurveyRateLimit("merchant_search", getSurveyClientKey(await headers()), { limit: 60, windowMs: 60_000 })
     : true;
-  const results = params.q && searchAllowed ? await store.searchPublicStores(params.q) : [];
+  const rawResults = params.q && searchAllowed ? await store.searchPublicStores(params.q) : [];
+  const allowedStoreIds = params.q && searchAllowed
+    ? new Set(filterPublicSurveyStores(await store.listStores()).map((item) => item.id))
+    : new Set<string>();
+  const results = rawResults.filter((item) => allowedStoreIds.has(item.id));
   return (
     <Shell>
       <section className="rounded-lg border border-ink/10 bg-white p-5 shadow-sm">

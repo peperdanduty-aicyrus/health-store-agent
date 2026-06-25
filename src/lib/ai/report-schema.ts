@@ -1,92 +1,49 @@
-import Ajv from "ajv";
 import type { SurveyReportType } from "../survey/types";
 
-const ajv = new Ajv({ allErrors: true });
+type PrimitiveRule = "array" | "number" | "object" | "string";
 
-const leadershipBriefSchema = {
-  type: "object",
-  required: ["one_sentence_conclusion", "overall_performance_summary", "highlights", "risks", "focus_stores", "next_month_priorities", "data_limitations"],
-  additionalProperties: true,
-  properties: {
-    data_limitations: { type: "array", items: { type: "string" } },
-    focus_stores: { type: "array", items: { type: "object", additionalProperties: true } },
-    highlights: { type: "array", items: { type: "object", additionalProperties: true } },
-    next_month_priorities: { type: "array", items: { type: "string" } },
-    one_sentence_conclusion: { type: "string" },
-    overall_performance_summary: { type: "string" },
-    risks: { type: "array", items: { type: "object", additionalProperties: true } },
+const reportRules: Record<SurveyReportType, Record<string, PrimitiveRule>> = {
+  full_analysis: {
+    category_analysis: "array",
+    data_limitations: "array",
+    decline_reason_summary: "string",
+    education_analysis: "string",
+    efficiency_analysis: "string",
+    executive_summary: "string",
+    follow_up_analysis: "string",
+    growth_reason_summary: "string",
+    kids_entertainment_analysis: "string",
+    next_month_plan: "array",
+    overall_analysis: "object",
+    peer_benchmark_summary: "string",
+    warning_store_analysis: "array",
   },
-} as const;
-
-const fullAnalysisSchema = {
-  type: "object",
-  required: [
-    "executive_summary",
-    "overall_analysis",
-    "category_analysis",
-    "efficiency_analysis",
-    "growth_reason_summary",
-    "decline_reason_summary",
-    "peer_benchmark_summary",
-    "warning_store_analysis",
-    "kids_entertainment_analysis",
-    "education_analysis",
-    "follow_up_analysis",
-    "next_month_plan",
-    "data_limitations",
-  ],
-  additionalProperties: true,
-  properties: {
-    category_analysis: { type: "array", items: { type: "object", additionalProperties: true } },
-    data_limitations: { type: "array", items: { type: "string" } },
-    decline_reason_summary: { type: "string" },
-    education_analysis: { type: "string" },
-    efficiency_analysis: { type: "string" },
-    executive_summary: { type: "string" },
-    follow_up_analysis: { type: "string" },
-    growth_reason_summary: { type: "string" },
-    kids_entertainment_analysis: { type: "string" },
-    next_month_plan: { type: "array", items: { type: "object", additionalProperties: true } },
-    overall_analysis: { type: "object", additionalProperties: true },
-    peer_benchmark_summary: { type: "string" },
-    warning_store_analysis: { type: "array", items: { type: "object", additionalProperties: true } },
+  leadership_brief: {
+    data_limitations: "array",
+    focus_stores: "array",
+    highlights: "array",
+    next_month_priorities: "array",
+    one_sentence_conclusion: "string",
+    overall_performance_summary: "string",
+    risks: "array",
   },
-} as const;
-
-const oralBriefingSchema = {
-  type: "object",
-  required: ["title", "estimated_minutes", "script", "key_numbers", "speaker_notes"],
-  additionalProperties: true,
-  properties: {
-    estimated_minutes: { type: "number" },
-    key_numbers: { type: "array", items: { type: "string" } },
-    script: { type: "string" },
-    speaker_notes: { type: "array", items: { type: "string" } },
-    title: { type: "string" },
+  oral_briefing: {
+    estimated_minutes: "number",
+    key_numbers: "array",
+    script: "string",
+    speaker_notes: "array",
+    title: "string",
   },
-} as const;
-
-const storeAnalysisSchema = {
-  type: "object",
-  required: ["store_id", "status", "warning_flags", "key_evidence", "merchant_reason_summary", "operator_issue_judgement", "priority_actions", "next_review_focus"],
-  additionalProperties: true,
-  properties: {
-    key_evidence: { type: "array", items: { type: "string" } },
-    merchant_reason_summary: { type: "string" },
-    next_review_focus: { type: "array", items: { type: "string" } },
-    operator_issue_judgement: { type: "string" },
-    priority_actions: { type: "array", items: { type: "string" } },
-    status: { type: "string" },
-    store_id: { type: "string" },
-    warning_flags: { type: "array", items: { type: "string" } },
+  store_analysis: {
+    key_evidence: "array",
+    merchant_reason_summary: "string",
+    next_review_focus: "array",
+    operator_issue_judgement: "string",
+    priority_actions: "array",
+    status: "string",
+    store_id: "string",
+    warning_flags: "array",
   },
-} as const;
-
-const validators = {
-  full_analysis: ajv.compile(fullAnalysisSchema),
-  leadership_brief: ajv.compile(leadershipBriefSchema),
-  oral_briefing: ajv.compile(oralBriefingSchema),
-  store_analysis: ajv.compile(storeAnalysisSchema),
 };
 
 const schemaExamples: Record<SurveyReportType, Record<string, unknown>> = {
@@ -138,14 +95,28 @@ export function getReportSchemaInstruction(reportType: SurveyReportType) {
 }
 
 export function validateReportJson(reportType: SurveyReportType, content: unknown): { errors: string[]; valid: boolean } {
-  const valid = validators[reportType](content);
-  return {
-    errors: valid ? [] : (validators[reportType].errors ?? []).map((error) => {
-      const err = error as { dataPath?: string; instancePath?: string; message?: string };
-      return `${err.instancePath || err.dataPath || "/"} ${err.message || ""}`.trim();
-    }),
-    valid: Boolean(valid),
-  };
+  if (!content || typeof content !== "object" || Array.isArray(content)) {
+    return { errors: ["/ should be object"], valid: false };
+  }
+  const record = content as Record<string, unknown>;
+  const errors: string[] = [];
+  for (const [key, rule] of Object.entries(reportRules[reportType])) {
+    if (!(key in record)) {
+      errors.push(`/${key} is required`);
+      continue;
+    }
+    if (!matchesRule(record[key], rule)) {
+      errors.push(`/${key} should be ${rule}`);
+    }
+  }
+  return { errors, valid: errors.length === 0 };
+}
+
+function matchesRule(value: unknown, rule: PrimitiveRule) {
+  if (rule === "array") return Array.isArray(value);
+  if (rule === "number") return typeof value === "number" && Number.isFinite(value);
+  if (rule === "object") return Boolean(value) && typeof value === "object" && !Array.isArray(value);
+  return typeof value === "string";
 }
 
 export function parseReportJson(text: string): unknown {

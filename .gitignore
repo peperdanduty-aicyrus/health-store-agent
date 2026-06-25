@@ -2,6 +2,8 @@
 .open-next/
 .wrangler/
 .stage4_package/
+backups/
+artifacts/
 node_modules/
 dist/
 coverage/

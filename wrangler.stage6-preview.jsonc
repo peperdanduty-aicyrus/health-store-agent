@@ -1,6 +1,6 @@
 {
   "$schema": "./node_modules/wrangler/config-schema.json",
-  "name": "health-store-agent",
+  "name": "health-store-agent-stage6-preview",
   "main": ".open-next/worker.js",
   "compatibility_date": "2026-06-10",
   "compatibility_flags": ["nodejs_compat"],
@@ -14,8 +14,8 @@
   "d1_databases": [
     {
       "binding": "DB",
-      "database_name": "health-store-agent-db",
-      "database_id": "eead25a5-88b9-48a8-af6e-8b94c612f9a0"
+      "database_name": "health-store-agent-preview-db",
+      "database_id": "ee499538-1af5-4605-9a45-5d17b22f2ac8"
     }
   ],
   "vars": {

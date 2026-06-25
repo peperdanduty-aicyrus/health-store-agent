@@ -5,7 +5,7 @@ import { computeMonthlyMetric, evaluateStoreWarnings } from "./analytics";
 import { hashSurveyPassword, verifySurveyPassword } from "./password";
 import { buildStoreSearchText, normalizeStoreSearchText } from "./search";
 import { defaultSurveyCategoryNames, surveyTestAccounts, type CreateSurveyStaffAccountInput } from "./store";
-import { importFinalSurveyStores } from "./real-store-data";
+import { formCategoryNameByCode, importFinalSurveyStores } from "./real-store-data";
 import type {
   ConfirmSurveyReportVersionInput,
   CreateSurveyAiReportJobInput,
@@ -57,6 +57,18 @@ type BoolRow<T> = Omit<T, "chainStore" | "enabled"> & {
   chain_store?: number;
   enabled?: number;
 };
+
+const stage6SubcategoryMappings = [
+  { formCategoryCode: "DIGITAL_3C", name: "3C数码", sortOrder: 1 },
+  { formCategoryCode: "KIDS_FASHION", name: "儿童鞋服", sortOrder: 2 },
+  { formCategoryCode: "KIDS_PRODUCTS", name: "儿童用品", sortOrder: 3 },
+  { formCategoryCode: "HOME_APPLIANCE", name: "家电", sortOrder: 4 },
+  { formCategoryCode: "HOME_APPLIANCE", name: "家用精品", sortOrder: 5 },
+  { formCategoryCode: "HOME_APPLIANCE", name: "日用杂货", sortOrder: 6 },
+  { formCategoryCode: "BEAUTY_HEALTH", name: "美妆护肤", sortOrder: 7 },
+  { formCategoryCode: "KIDS_ENTERTAINMENT", name: "儿童游乐", sortOrder: 8 },
+  { formCategoryCode: "EDUCATION", name: "教培", sortOrder: 9 },
+] as const;
 
 const seedMall: SurveyMall = {
   id: "survey_mall_001",
@@ -838,7 +850,8 @@ async function ensureSurveyRuntimeSchema(db: SurveyD1DatabaseLike) {
     `CREATE TABLE IF NOT EXISTS survey_brands (id TEXT PRIMARY KEY, mall_id TEXT NOT NULL, name TEXT NOT NULL, normalized_name TEXT NOT NULL, created_at TEXT NOT NULL, updated_at TEXT NOT NULL, UNIQUE (mall_id, normalized_name))`,
     `CREATE TABLE IF NOT EXISTS survey_business_categories (id TEXT PRIMARY KEY, mall_id TEXT NOT NULL, name TEXT NOT NULL, sort_order INTEGER NOT NULL, enabled INTEGER NOT NULL, created_at TEXT NOT NULL, updated_at TEXT NOT NULL, UNIQUE (mall_id, name))`,
     `CREATE TABLE IF NOT EXISTS survey_business_subcategories (id TEXT PRIMARY KEY, mall_id TEXT NOT NULL, category_id TEXT NOT NULL, name TEXT NOT NULL, sort_order INTEGER NOT NULL, enabled INTEGER NOT NULL, created_at TEXT NOT NULL, updated_at TEXT NOT NULL, UNIQUE (category_id, name))`,
-    `CREATE TABLE IF NOT EXISTS survey_stores (id TEXT PRIMARY KEY, mall_id TEXT NOT NULL, mall_name TEXT NOT NULL, brand_id TEXT NOT NULL, brand_name TEXT NOT NULL, store_name TEXT NOT NULL, store_code TEXT NOT NULL, floor TEXT NOT NULL, unit_no TEXT NOT NULL, display_location TEXT NOT NULL, category_id TEXT NOT NULL, category_name TEXT NOT NULL, subcategory_id TEXT, subcategory_name TEXT, contract_start_date TEXT, contract_end_date TEXT, area_sqm REAL, staff_count INTEGER, manager_name TEXT, contact_phone TEXT, operation_mode TEXT, chain_store INTEGER NOT NULL, operator_name TEXT, rent_mode TEXT, status TEXT NOT NULL, search_text TEXT NOT NULL, created_at TEXT NOT NULL, updated_at TEXT NOT NULL)`,
+    `CREATE TABLE IF NOT EXISTS survey_subcategory_form_mappings (id TEXT PRIMARY KEY, mall_id TEXT NOT NULL, subcategory_name TEXT NOT NULL, form_category_code TEXT NOT NULL, form_category_name TEXT NOT NULL, enabled INTEGER NOT NULL, sort_order INTEGER NOT NULL, created_at TEXT NOT NULL, updated_at TEXT NOT NULL, UNIQUE (mall_id, subcategory_name))`,
+    `CREATE TABLE IF NOT EXISTS survey_stores (id TEXT PRIMARY KEY, mall_id TEXT NOT NULL, mall_name TEXT NOT NULL, brand_id TEXT NOT NULL, brand_name TEXT NOT NULL, store_name TEXT NOT NULL, store_code TEXT NOT NULL, floor TEXT NOT NULL, unit_no TEXT NOT NULL, display_location TEXT NOT NULL, category_id TEXT NOT NULL, category_name TEXT NOT NULL, form_category_code TEXT, subcategory_id TEXT, subcategory_name TEXT, contract_start_date TEXT, contract_end_date TEXT, area_sqm REAL, staff_count INTEGER, manager_name TEXT, contact_phone TEXT, operation_mode TEXT, chain_store INTEGER NOT NULL, operator_name TEXT, rent_mode TEXT, status TEXT NOT NULL, search_text TEXT NOT NULL, created_at TEXT NOT NULL, updated_at TEXT NOT NULL)`,
     `CREATE TABLE IF NOT EXISTS survey_store_aliases (id TEXT PRIMARY KEY, store_id TEXT NOT NULL, alias TEXT NOT NULL, normalized_alias TEXT NOT NULL, created_at TEXT NOT NULL)`,
     `CREATE TABLE IF NOT EXISTS survey_form_fields (id TEXT PRIMARY KEY, mall_id TEXT NOT NULL, category_id TEXT, field_key TEXT NOT NULL, label TEXT NOT NULL, type TEXT NOT NULL, required INTEGER NOT NULL, unit TEXT, precision INTEGER, options_json TEXT, visible_rule_json TEXT, sort_order INTEGER NOT NULL, enabled INTEGER NOT NULL, created_at TEXT NOT NULL, updated_at TEXT NOT NULL)`,
     `CREATE TABLE IF NOT EXISTS survey_audit_logs (id TEXT PRIMARY KEY, mall_id TEXT NOT NULL, actor_type TEXT NOT NULL, actor_id TEXT NOT NULL, action TEXT NOT NULL, target_type TEXT NOT NULL, target_id TEXT NOT NULL, detail_json TEXT NOT NULL, created_at TEXT NOT NULL)`,
@@ -867,6 +880,7 @@ async function ensureSurveyRuntimeSchema(db: SurveyD1DatabaseLike) {
   await addColumnIfMissing(db, "survey_ai_report_jobs", "elapsed_ms", "INTEGER");
   await addColumnIfMissing(db, "survey_ai_report_jobs", "error_code", "TEXT");
   await addColumnIfMissing(db, "survey_ai_report_jobs", "token_usage_json", "TEXT");
+  await addColumnIfMissing(db, "survey_stores", "form_category_code", "TEXT");
 }
 
 async function addColumnIfMissing(db: SurveyD1DatabaseLike, table: string, column: string, type: string) {
@@ -895,6 +909,7 @@ async function ensureSurveySeedData(db: SurveyD1DatabaseLike) {
         .run();
     }
   }
+  await ensureStage6SubcategoryMappings(db, seedMall.id);
   const defaultMallRow = await db.prepare("SELECT * FROM survey_malls ORDER BY created_at LIMIT 1").first<Record<string, unknown>>();
   const fieldMallId = String(defaultMallRow?.id || seedMall.id);
   const categoryRows = await db.prepare("SELECT * FROM survey_business_categories ORDER BY sort_order").all<Record<string, unknown>>();
@@ -926,26 +941,74 @@ async function ensureSurveySeedData(db: SurveyD1DatabaseLike) {
       )
       .run();
   }
-  await ensureStaff(db, {
-    displayName: surveyTestAccounts.superAdmin.displayName,
-    loginName: surveyTestAccounts.superAdmin.loginName,
-    mallId: seedMall.id,
-    password: surveyTestAccounts.superAdmin.password,
-    phone: "",
-    role: "super_admin",
-    startsAt: "2026-06-01",
-    termMonths: 12,
-  });
-  await ensureStaff(db, {
-    displayName: surveyTestAccounts.operator.displayName,
-    loginName: surveyTestAccounts.operator.loginName,
-    mallId: seedMall.id,
-    password: surveyTestAccounts.operator.password,
-    phone: "",
-    role: "operator",
-    startsAt: "2026-06-01",
-    termMonths: 12,
-  });
+  if (shouldSeedSurveyTestAccounts()) {
+    await ensureStaff(db, {
+      displayName: surveyTestAccounts.superAdmin.displayName,
+      loginName: surveyTestAccounts.superAdmin.loginName,
+      mallId: seedMall.id,
+      password: surveyTestAccounts.superAdmin.password,
+      phone: "",
+      role: "super_admin",
+      startsAt: "2026-06-01",
+      termMonths: 12,
+    });
+    await ensureStaff(db, {
+      displayName: surveyTestAccounts.operator.displayName,
+      loginName: surveyTestAccounts.operator.loginName,
+      mallId: seedMall.id,
+      password: surveyTestAccounts.operator.password,
+      phone: "",
+      role: "operator",
+      startsAt: "2026-06-01",
+      termMonths: 12,
+    });
+  }
+}
+
+function shouldSeedSurveyTestAccounts() {
+  if (process.env.SURVEY_SEED_TEST_ACCOUNTS === "true") return true;
+  if (process.env.SURVEY_SEED_TEST_ACCOUNTS === "false") return false;
+  return process.env.NODE_ENV !== "production";
+}
+
+async function ensureStage6SubcategoryMappings(db: SurveyD1DatabaseLike, mallId: string) {
+  for (const mapping of stage6SubcategoryMappings) {
+    const categoryName = formCategoryNameByCode[mapping.formCategoryCode] ?? mapping.name;
+    const category = await db
+      .prepare("SELECT * FROM survey_business_categories WHERE mall_id = ? AND name = ? ORDER BY sort_order LIMIT 1")
+      .bind(mallId, categoryName)
+      .first<Record<string, unknown>>();
+    const categoryId = String(category?.id || mapping.formCategoryCode);
+    const subcategoryId = `survey_subcategory_${String(mapping.sortOrder).padStart(3, "0")}`;
+    const now = new Date().toISOString();
+    await db
+      .prepare(
+        `INSERT OR IGNORE INTO survey_business_subcategories
+         (id, mall_id, category_id, name, sort_order, enabled, created_at, updated_at)
+         VALUES (?, ?, ?, ?, ?, 1, ?, ?)`,
+      )
+      .bind(subcategoryId, mallId, categoryId, mapping.name, mapping.sortOrder, now, now)
+      .run();
+    await db
+      .prepare(
+        `INSERT OR IGNORE INTO survey_subcategory_form_mappings
+         (id, mall_id, subcategory_name, form_category_code, form_category_name, enabled, sort_order, created_at, updated_at)
+         VALUES (?, ?, ?, ?, ?, 1, ?, ?, ?)`,
+      )
+      .bind(`survey_subcategory_mapping_${String(mapping.sortOrder).padStart(3, "0")}`, mallId, mapping.name, mapping.formCategoryCode, categoryName, mapping.sortOrder, now, now)
+      .run();
+  }
+  for (const mapping of stage6SubcategoryMappings) {
+    await db
+      .prepare(
+        `UPDATE survey_stores
+         SET form_category_code = ?,
+             subcategory_id = COALESCE(NULLIF(subcategory_id, ''), ?)
+         WHERE subcategory_name = ?`,
+      )
+      .bind(mapping.formCategoryCode, `survey_subcategory_${String(mapping.sortOrder).padStart(3, "0")}`, mapping.name)
+      .run();
+  }
 }
 
 async function ensureStaff(db: SurveyD1DatabaseLike, input: CreateSurveyStaffAccountInput) {
@@ -1021,11 +1084,11 @@ async function insertStore(db: SurveyD1DatabaseLike, store: SurveyStore) {
     .prepare(
       `INSERT INTO survey_stores (
         id, mall_id, mall_name, brand_id, brand_name, store_name, store_code, floor, unit_no,
-        display_location, category_id, category_name, subcategory_id, subcategory_name,
+        display_location, category_id, category_name, form_category_code, subcategory_id, subcategory_name,
         contract_start_date, contract_end_date, area_sqm, staff_count, manager_name,
         contact_phone, operation_mode, chain_store, operator_name, rent_mode, status,
         search_text, created_at, updated_at
-      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
     )
     .bind(
       store.id,
@@ -1040,6 +1103,7 @@ async function insertStore(db: SurveyD1DatabaseLike, store: SurveyStore) {
       store.displayLocation,
       store.categoryId,
       store.categoryName,
+      store.formCategoryCode ?? categoryNameToCode(store.subcategoryName || store.categoryName),
       store.subcategoryId,
       store.subcategoryName,
       store.contractStartDate,
