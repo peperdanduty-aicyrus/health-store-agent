@@ -1,0 +1,34 @@
+{
+  "$schema": "./node_modules/wrangler/config-schema.json",
+  "name": "mall-survey-prod",
+  "main": ".open-next/worker.js",
+  "compatibility_date": "2026-06-10",
+  "compatibility_flags": ["nodejs_compat"],
+  "observability": {
+    "enabled": true
+  },
+  "assets": {
+    "directory": ".open-next/assets",
+    "binding": "ASSETS"
+  },
+  "d1_databases": [
+    {
+      "binding": "DB",
+      "database_name": "mall-survey-db",
+      "database_id": "PENDING_CREATE"
+    }
+  ],
+  "vars": {
+    "APP_MODE": "survey",
+    "APP_ENV": "production",
+    "AI_PROVIDER": "deepseek",
+    "AI_MODEL": "deepseek-v4-flash",
+    "AI_BASE_URL": "https://api.deepseek.com",
+    "NEXT_PUBLIC_SURVEY_ENTRY_ENABLED": "true",
+    "SURVEY_PUBLIC_ACCESS_MODE": "pilot",
+    "SURVEY_PILOT_STORE_CODES": "L0149N01,L0126N002,L0409N01,L0467N01,L0476N02,B0176N01,L0323N03,L0315N01",
+    "SURVEY_SEED_TEST_ACCOUNTS": "false",
+    "SURVEY_REPORT_MOCK_PROVIDER_ENABLED": "0"
+  }
+}
+

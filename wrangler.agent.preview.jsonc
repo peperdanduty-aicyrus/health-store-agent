@@ -1,0 +1,30 @@
+{
+  "$schema": "./node_modules/wrangler/config-schema.json",
+  "name": "health-agent-preview",
+  "main": ".open-next/worker.js",
+  "compatibility_date": "2026-06-10",
+  "compatibility_flags": ["nodejs_compat"],
+  "observability": {
+    "enabled": true
+  },
+  "assets": {
+    "directory": ".open-next/assets",
+    "binding": "ASSETS"
+  },
+  "d1_databases": [
+    {
+      "binding": "DB",
+      "database_name": "health-agent-preview-db",
+      "database_id": "PENDING_CREATE"
+    }
+  ],
+  "vars": {
+    "APP_MODE": "agent",
+    "APP_ENV": "preview",
+    "AI_PROVIDER": "deepseek",
+    "AI_MODEL": "deepseek-v4-flash",
+    "AI_BASE_URL": "https://api.deepseek.com",
+    "WORKBENCH_PUBLIC_TEST_ENABLED": "false"
+  }
+}
+
