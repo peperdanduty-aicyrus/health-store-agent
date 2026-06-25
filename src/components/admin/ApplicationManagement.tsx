@@ -46,7 +46,7 @@ export function ApplicationManagement({ applications }: { applications: OpeningA
                 ) : (
                   <Link
                     className="inline-flex min-h-10 items-center rounded-md bg-ink px-4 text-sm font-medium text-white"
-                    href={`/cyrus/users/new?applicationId=${application.id}`}
+                    href={`/agent-admin/users/new?applicationId=${application.id}`}
                   >
                     开通为客户账号
                   </Link>

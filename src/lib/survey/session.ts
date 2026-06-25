@@ -1,11 +1,13 @@
 import { cookies } from "next/headers";
 import { redirect } from "next/navigation";
+import { assertSurveyMode } from "../app-mode";
 import { getSurveyStore } from "./repository";
 import type { SurveyStaffAccount } from "./types";
 
 export const surveySessionCookieName = "survey_staff_session";
 
 export async function getCurrentSurveyStaff(): Promise<SurveyStaffAccount | null> {
+  assertSurveyMode();
   const cookieStore = await cookies();
   const staffId = cookieStore.get(surveySessionCookieName)?.value;
   if (!staffId) {

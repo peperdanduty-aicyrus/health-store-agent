@@ -1,0 +1,88 @@
+export type AppMode = "agent" | "mixed" | "survey";
+export type AppEnv = "preview" | "production" | "test";
+
+const agentPrefixes = ["/", "/login", "/app", "/agent-admin", "/cyrus", "/lvminglei", "/lvminglei-test", "/tutorial"];
+const surveyPrefixes = ["/", "/survey", "/yingyun", "/api/survey"];
+
+export function getAppMode(value = process.env.APP_MODE): AppMode {
+  if (value === "agent" || value === "survey") return value;
+  return "mixed";
+}
+
+export function getAppEnv(value = process.env.APP_ENV): AppEnv {
+  if (value === "production" || value === "preview") return value;
+  return "test";
+}
+
+export function getAppMetadata(mode = getAppMode()) {
+  if (mode === "survey") {
+    return {
+      description: "商场经营调研、营运跟进、预警和月度经营报告系统。",
+      title: "商场经营调研系统",
+    };
+  }
+  return {
+    description: "面向中医馆、推拿馆、口腔门诊、健康管理中心和宠物医院的 AI 获客文案工具，可先免费试用。",
+    title: "本地健康门店 AI 获客文案助手",
+  };
+}
+
+export function assertAgentMode() {
+  if (getAppMode() === "survey") {
+    throw new Error("agent_mode_required");
+  }
+}
+
+export function assertSurveyMode() {
+  if (getAppMode() === "agent") {
+    throw new Error("survey_mode_required");
+  }
+}
+
+export function shouldRedirectAgentCyrus(pathname: string, mode = getAppMode()) {
+  const normalized = normalizePath(pathname);
+  return mode === "agent" && (normalized === "/cyrus" || normalized.startsWith("/cyrus/"));
+}
+
+export function getAgentCyrusRedirectPath(pathname: string) {
+  const normalized = normalizePath(pathname);
+  if (normalized === "/cyrus") return "/agent-admin";
+  return normalized.replace(/^\/cyrus/, "/agent-admin");
+}
+
+export function canAccessPath(pathname: string, mode = getAppMode()) {
+  const normalized = normalizePath(pathname);
+  if (mode === "mixed") return true;
+  if (mode === "agent") {
+    if (isSurveyPath(normalized)) return false;
+    return isAllowedByPrefixes(normalized, agentPrefixes);
+  }
+  if (isAgentPath(normalized)) return false;
+  if (normalized === "/cyrus") return true;
+  return isAllowedByPrefixes(normalized, surveyPrefixes);
+}
+
+function isSurveyPath(pathname: string) {
+  return pathname === "/survey" || pathname.startsWith("/survey/") ||
+    pathname === "/yingyun" || pathname.startsWith("/yingyun/") ||
+    pathname === "/api/survey" || pathname.startsWith("/api/survey/");
+}
+
+function isAgentPath(pathname: string) {
+  return pathname === "/login" || pathname.startsWith("/login/") ||
+    pathname === "/app" || pathname.startsWith("/app/") ||
+    pathname === "/agent-admin" || pathname.startsWith("/agent-admin/") ||
+    pathname.startsWith("/cyrus/") ||
+    pathname === "/lvminglei" || pathname.startsWith("/lvminglei/") ||
+    pathname === "/lvminglei-test" || pathname.startsWith("/lvminglei-test/") ||
+    pathname === "/tutorial" || pathname.startsWith("/tutorial/");
+}
+
+function isAllowedByPrefixes(pathname: string, prefixes: string[]) {
+  return prefixes.some((prefix) => pathname === prefix || (prefix !== "/" && pathname.startsWith(`${prefix}/`)));
+}
+
+function normalizePath(pathname: string) {
+  if (!pathname || pathname === "/") return "/";
+  return pathname.endsWith("/") && pathname.length > 1 ? pathname.slice(0, -1) : pathname;
+}

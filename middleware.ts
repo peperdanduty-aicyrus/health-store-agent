@@ -1,17 +1,23 @@
 import { NextResponse, type NextRequest } from "next/server";
-import { isSurveyHost } from "@/lib/survey/host";
+import { canAccessPath, getAgentCyrusRedirectPath, getAppMode, shouldRedirectAgentCyrus } from "@/lib/app-mode";
 
 export function middleware(request: NextRequest) {
   const { pathname } = request.nextUrl;
-  if (pathname === "/" && isSurveyHost(request.headers.get("host"))) {
-    const url = request.nextUrl.clone();
-    url.pathname = "/survey";
-    return NextResponse.rewrite(url);
+  const mode = getAppMode();
+
+  if (shouldRedirectAgentCyrus(pathname, mode)) {
+    return NextResponse.redirect(new URL(getAgentCyrusRedirectPath(pathname), request.url), 307);
+  }
+
+  if (!canAccessPath(pathname, mode)) {
+    return new NextResponse("Not Found", { status: 404 });
   }
 
   return NextResponse.next();
 }
 
 export const config = {
-  matcher: ["/"],
+  matcher: [
+    "/((?!_next/static|_next/image|favicon.ico|robots.txt|sitemap.xml|.*\\.(?:png|jpg|jpeg|gif|webp|svg|ico|css|js|map)).*)",
+  ],
 };

@@ -1,11 +1,13 @@
 import { cookies } from "next/headers";
 import { redirect } from "next/navigation";
+import { assertAgentMode } from "../app-mode";
 import { getDataStore } from "../data/repository";
 import type { Profile } from "../data/types";
 
 export const sessionCookieName = "hsa_session";
 
 export async function getCurrentProfile(): Promise<Profile | null> {
+  assertAgentMode();
   const cookieStore = await cookies();
   const userId = cookieStore.get(sessionCookieName)?.value;
 
@@ -31,7 +33,7 @@ export async function requireAdmin(): Promise<Profile> {
   const profile = await getCurrentProfile();
 
   if (!profile || profile.role !== "admin") {
-    redirect("/cyrus");
+    redirect("/agent-admin");
   }
 
   return profile;

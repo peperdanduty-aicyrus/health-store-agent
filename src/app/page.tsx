@@ -2,6 +2,8 @@ import Link from "next/link";
 import { ArrowRight, CheckCircle2, Sparkles } from "lucide-react";
 import { WechatQrPanel } from "@/components/WechatQrPanel";
 import { OpeningApplicationForm } from "@/components/public/OpeningApplicationForm";
+import { getAppMode } from "@/lib/app-mode";
+import SurveyPage from "./survey/page";
 
 const storeTypes = [
   "中医馆 / 中医诊所",
@@ -46,6 +48,10 @@ const trustPoints = [
 ];
 
 export default function Home() {
+  if (getAppMode() === "survey") {
+    return <SurveyPage />;
+  }
+
   return (
     <main className="min-h-screen pb-20 sm:pb-0">
       <header className="sticky top-0 z-30 border-b border-ink/10 bg-paper/95 backdrop-blur">

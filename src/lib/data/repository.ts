@@ -1,5 +1,6 @@
 import { mockStore } from "./store";
 import { createD1Store, type D1DatabaseLike } from "./store-d1";
+import { assertAgentMode } from "../app-mode";
 import type {
   CreateGenerationInput,
   CreateOpeningApplicationInput,
@@ -61,6 +62,7 @@ export type DataStore = {
 let d1StorePromise: Promise<DataStore> | null = null;
 
 export async function getDataStore(): Promise<DataStore> {
+  assertAgentMode();
   const db = await getD1Database();
 
   if (!db) {

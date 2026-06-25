@@ -33,7 +33,7 @@ export function UserManagement({ users }: { users: Profile[] }) {
                   <td className="px-4 py-3">{user.dailyLimit}</td>
                   <td className="px-4 py-3">{user.disabled ? "是" : "否"}</td>
                   <td className="px-4 py-3">
-                    <Link className="font-medium text-moss" href={`/cyrus/users/${user.id}`}>
+                    <Link className="font-medium text-moss" href={`/agent-admin/users/${user.id}`}>
                       管理
                     </Link>
                   </td>

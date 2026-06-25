@@ -5,12 +5,12 @@ import { logout } from "@/app/actions";
 import type { Profile } from "@/lib/data/types";
 
 const navItems = [
-  { href: "/cyrus", label: "概览" },
-  { href: "/cyrus/users", label: "账号" },
-  { href: "/cyrus/applications", label: "线索" },
-  { href: "/cyrus/generations", label: "记录" },
-  { href: "/cyrus/store-profiles", label: "资料" },
-  { href: "/cyrus/settings", label: "设置" },
+  { href: "/agent-admin", label: "概览" },
+  { href: "/agent-admin/users", label: "账号" },
+  { href: "/agent-admin/applications", label: "线索" },
+  { href: "/agent-admin/generations", label: "记录" },
+  { href: "/agent-admin/store-profiles", label: "资料" },
+  { href: "/agent-admin/settings", label: "设置" },
 ];
 
 export function AdminShell({ children, profile }: { children: ReactNode; profile: Profile }) {

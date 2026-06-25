@@ -79,8 +79,8 @@ export async function submitOpeningApplication(
     storeType: String(values.storeType),
     wechatId: String(values.wechatId || values.phone),
   });
-  revalidatePath("/cyrus");
-  revalidatePath("/cyrus/applications");
+  revalidatePath("/agent-admin");
+  revalidatePath("/agent-admin/applications");
 
   return {
     message: "申请已提交，请添加微信领取试用账号。人工确认后会为你发放登录账号和密码。",
@@ -111,7 +111,7 @@ export async function loginWithPassword(_previousState: LoginFormState, formData
     sameSite: "lax",
   });
 
-  redirect(profile.role === "admin" ? "/cyrus" : "/app");
+  redirect(profile.role === "admin" ? "/agent-admin" : "/app");
 }
 
 export async function logout() {
@@ -172,9 +172,9 @@ export async function createMerchantAccount(
   if (applicationId) {
     await store.updateOpeningApplicationStatus(applicationId, "opened", created.id);
   }
-  revalidatePath("/cyrus");
-  revalidatePath("/cyrus/applications");
-  revalidatePath("/cyrus/users");
+  revalidatePath("/agent-admin");
+  revalidatePath("/agent-admin/applications");
+  revalidatePath("/agent-admin/users");
 
   return { message: `已创建账号：${input.phone}，客户登录地址是 /login。`, success: true };
 }
@@ -196,8 +196,8 @@ export async function toggleCustomerDisabled(
     return { message: "未找到可操作的客户账号。", success: false };
   }
 
-  revalidatePath("/cyrus/users");
-  revalidatePath(`/cyrus/users/${userId}`);
+  revalidatePath("/agent-admin/users");
+  revalidatePath(`/agent-admin/users/${userId}`);
   return { message: disabled ? "已禁用该客户账号。" : "已启用该客户账号。", success: true };
 }
 
@@ -229,8 +229,8 @@ export async function resetCustomerPassword(
     return { message: "未找到客户账号。", success: false };
   }
 
-  revalidatePath("/cyrus/users");
-  revalidatePath(`/cyrus/users/${userId}`);
+  revalidatePath("/agent-admin/users");
+  revalidatePath(`/agent-admin/users/${userId}`);
   return { message: "客户密码已重置。", success: true };
 }
 
@@ -257,8 +257,8 @@ export async function deleteOpeningApplication(
     return { message: "删除失败，请稍后重试。", success: false };
   }
 
-  revalidatePath("/cyrus");
-  revalidatePath("/cyrus/applications");
+  revalidatePath("/agent-admin");
+  revalidatePath("/agent-admin/applications");
   return { message: "开通申请已删除。", success: true };
 }
 
@@ -285,8 +285,8 @@ export async function deleteGenerationRecord(
     return { message: "删除失败，请稍后重试。", success: false };
   }
 
-  revalidatePath("/cyrus");
-  revalidatePath("/cyrus/generations");
+  revalidatePath("/agent-admin");
+  revalidatePath("/agent-admin/generations");
   return { message: "生成记录已删除。", success: true };
 }
 
@@ -304,8 +304,8 @@ export async function deleteAllGenerationRecords(
   } catch {
     return { message: "删除失败，请稍后重试。", success: false };
   }
-  revalidatePath("/cyrus");
-  revalidatePath("/cyrus/generations");
+  revalidatePath("/agent-admin");
+  revalidatePath("/agent-admin/generations");
   return { message: "全部生成记录已删除。", success: true };
 }
 
@@ -337,7 +337,7 @@ export async function changeOwnPassword(
 
   await store.updateUserPassword(profile.id, newPassword);
   cookieStore.delete(sessionCookieName);
-  redirect(profile.role === "admin" ? "/cyrus" : "/login");
+  redirect(profile.role === "admin" ? "/agent-admin" : "/login");
 }
 
 export async function saveCustomerStoreProfileText(
@@ -358,7 +358,7 @@ export async function saveCustomerStoreProfileText(
     });
     await (await getDataStore()).upsertStoreProfile(input);
     revalidatePath("/app/store-profile");
-    revalidatePath("/cyrus/store-profiles");
+    revalidatePath("/agent-admin/store-profiles");
     return {
       message: "店铺资料已保存，后续生成内容会优先参考这份资料。",
       profileSummary: input.profileSummary,
@@ -394,7 +394,7 @@ export async function summarizeCustomerStoreProfileText(
     });
     await (await getDataStore()).upsertStoreProfile(input);
     revalidatePath("/app/store-profile");
-    revalidatePath("/cyrus/store-profiles");
+    revalidatePath("/agent-admin/store-profiles");
     return {
       message: "AI 已整理资料摘要，可继续编辑后保存。",
       profileSummary: input.profileSummary,
@@ -430,8 +430,8 @@ export async function saveAdminStoreProfileText(
       uploadBy: "admin",
     });
     await store.upsertStoreProfile(input);
-    revalidatePath("/cyrus/store-profiles");
-    revalidatePath(`/cyrus/store-profiles/${profile.id}`);
+    revalidatePath("/agent-admin/store-profiles");
+    revalidatePath(`/agent-admin/store-profiles/${profile.id}`);
     revalidatePath("/app/store-profile");
     return {
       message: "已保存客户店铺资料。",
@@ -474,8 +474,8 @@ export async function summarizeAdminStoreProfileText(
       uploadBy: "admin",
     });
     await store.upsertStoreProfile(input);
-    revalidatePath("/cyrus/store-profiles");
-    revalidatePath(`/cyrus/store-profiles/${profile.id}`);
+    revalidatePath("/agent-admin/store-profiles");
+    revalidatePath(`/agent-admin/store-profiles/${profile.id}`);
     revalidatePath("/app/store-profile");
     return {
       message: "AI 已整理客户资料摘要，可继续编辑后保存。",
@@ -511,8 +511,8 @@ export async function saveAdminStoreProfileSummary(
 
   const userId = String(formData.get("userId") || "");
   return saveStoreProfileSummary(userId, String(formData.get("profileSummary") || ""), [
-    "/cyrus/store-profiles",
-    `/cyrus/store-profiles/${userId}`,
+    "/agent-admin/store-profiles",
+    `/agent-admin/store-profiles/${userId}`,
   ]);
 }
 
@@ -525,7 +525,7 @@ export async function deleteCustomerStoreProfile(
     return { message: "请先登录后再删除。", success: false };
   }
 
-  return deleteStoreProfileForUser(profile.id, ["/app/store-profile", "/cyrus/store-profiles"]);
+  return deleteStoreProfileForUser(profile.id, ["/app/store-profile", "/agent-admin/store-profiles"]);
 }
 
 export async function deleteAdminStoreProfile(
@@ -538,7 +538,7 @@ export async function deleteAdminStoreProfile(
   }
 
   const userId = String(formData.get("userId") || "");
-  return deleteStoreProfileForUser(userId, ["/cyrus/store-profiles", `/cyrus/store-profiles/${userId}`]);
+  return deleteStoreProfileForUser(userId, ["/agent-admin/store-profiles", `/agent-admin/store-profiles/${userId}`]);
 }
 
 export async function regenerateCustomerStoreProfileSummary(
@@ -550,7 +550,7 @@ export async function regenerateCustomerStoreProfileSummary(
     return { message: "请先登录后再操作。", success: false };
   }
 
-  return regenerateStoreProfileSummary(profile, ["/app/store-profile", "/cyrus/store-profiles"]);
+  return regenerateStoreProfileSummary(profile, ["/app/store-profile", "/agent-admin/store-profiles"]);
 }
 
 export async function regenerateAdminStoreProfileSummary(
@@ -569,7 +569,7 @@ export async function regenerateAdminStoreProfileSummary(
     return { message: "未找到客户账号。", success: false };
   }
 
-  return regenerateStoreProfileSummary(profile, ["/cyrus/store-profiles", `/cyrus/store-profiles/${profile.id}`]);
+  return regenerateStoreProfileSummary(profile, ["/agent-admin/store-profiles", `/agent-admin/store-profiles/${profile.id}`]);
 }
 
 export async function markGeneratedContentCopied(generationId: string): Promise<void> {
@@ -592,7 +592,7 @@ export async function markGeneratedContentCopied(generationId: string): Promise<
 
   await store.markGenerationCopied(generationId);
   revalidatePath("/app/history");
-  revalidatePath("/cyrus/generations");
+  revalidatePath("/agent-admin/generations");
 }
 
 export async function generateForScene(

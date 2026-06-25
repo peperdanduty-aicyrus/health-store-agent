@@ -1,6 +1,7 @@
 import { createSeededSurveyMemoryStore, createSurveyMemoryStore } from "./store";
 import { createLocalSurveyD1Database } from "./local-d1";
 import { createSurveyD1Store, type SurveyD1DatabaseLike } from "./store-d1";
+import { assertSurveyMode } from "../app-mode";
 
 export type SurveyStoreRepository = ReturnType<typeof createSurveyMemoryStore>;
 
@@ -10,6 +11,7 @@ const globalForSurveyStore = globalThis as typeof globalThis & {
 };
 
 export async function getSurveyStore(): Promise<SurveyStoreRepository> {
+  assertSurveyMode();
   const db = await getSurveyD1Database();
   if (db) {
     globalForSurveyStore.__surveyD1Store ??= createSurveyD1Store(db) as Promise<SurveyStoreRepository>;
