@@ -49,7 +49,7 @@ const trustPoints = [
 
 export default function Home() {
   if (getAppMode() === "survey") {
-    return <SurveyPage />;
+    return <SurveyPage searchParams={Promise.resolve({})} />;
   }
 
   return (
