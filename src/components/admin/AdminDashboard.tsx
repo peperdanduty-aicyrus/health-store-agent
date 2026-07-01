@@ -1,8 +1,11 @@
 import type { GenerationRecord, Profile } from "@/lib/data/types";
+import { isBillableGeneration } from "@/lib/ai/generation-record";
 
 export function AdminDashboard({ generations, users }: { generations: GenerationRecord[]; users: Profile[] }) {
   const today = new Date().toISOString().slice(0, 10);
-  const todayGenerations = generations.filter((record) => record.createdAt.slice(0, 10) === today);
+  const todayGenerations = generations.filter(
+    (record) => record.createdAt.slice(0, 10) === today && isBillableGeneration(record),
+  );
   const activeUserIds = new Set(todayGenerations.map((record) => record.userId));
   const paidUsers = users.filter((user) => user.memberStatus === "paid" && user.role === "user");
   const expiredUsers = users.filter((user) => user.memberStatus === "expired");

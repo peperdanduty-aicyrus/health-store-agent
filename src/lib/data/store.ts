@@ -1,4 +1,5 @@
 import { seedGenerations, seedProfiles, seedOpeningApplications, seedWorkbenchAccounts } from "./seed";
+import { normalizeGenerationDiagnostics } from "./generation-diagnostics";
 import type {
   CreateGenerationInput,
   CreateOpeningApplicationInput,
@@ -40,6 +41,7 @@ export function createMockStore(initialState?: Partial<StoreState>) {
     createGeneration(input: CreateGenerationInput): GenerationRecord {
       const record: GenerationRecord = {
         ...input,
+        ...normalizeGenerationDiagnostics(input),
         id: makeId("generation", state.generations.length + 1),
         createdAt: new Date().toISOString(),
       };

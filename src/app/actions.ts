@@ -3,7 +3,9 @@
 import { cookies } from "next/headers";
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
-import { generateContent, generateStoreProfileSummary } from "@/lib/ai/provider";
+import { generateStoreProfileSummary } from "@/lib/ai/provider";
+import { generateSafeSceneContent } from "@/lib/ai/generation-service";
+import { isBillableGeneration } from "@/lib/ai/generation-record";
 import { sessionCookieName } from "@/lib/auth/session";
 import { getDataStore } from "@/lib/data/repository";
 import type { CreateUserInput, Profile, StoreProfileUploadBy, UpsertStoreProfileInput } from "@/lib/data/types";
@@ -611,7 +613,7 @@ export async function generateForScene(
   const scene = String(formData.get("scene") || "") as SceneKey;
   const today = new Date().toISOString().slice(0, 10);
   const todayCount = (await store.listGenerations({ userId: profile.id }))
-    .filter((record) => record.createdAt.slice(0, 10) === today).length;
+    .filter((record) => record.createdAt.slice(0, 10) === today && isBillableGeneration(record)).length;
   const permission = canGenerate({ profile, scene, today, todayCount });
 
   if (!permission.allowed) {
@@ -634,47 +636,79 @@ export async function generateForScene(
 
   const storeProfileRecord = await store.getStoreProfileByUserId(profile.id);
   const storeProfileSummary = storeProfileRecord?.profileSummary.trim() || "";
-  const generated = await generateContent({
-    input,
-    scene,
-    storeProfile: {
-      ...profile,
-      storeProfileSummary,
-    },
-    userId: profile.id,
-  });
-  const safeResult = replaceSensitiveWords(generated.content);
-  const sensitiveCheckResult =
-    safeResult.replacements.length > 0
-      ? `已自动替换风险表达：${safeResult.replacements.map((item) => `${item.from}→${item.to}`).join("、")}。`
-      : "未发现明显高风险表达。";
-  const record = await store.createGeneration({
-    copied: false,
-    extraInfo: input.extraInfo,
-    generationType: scene,
-    modelName: generated.model,
-    modelProvider: generated.provider,
-    phone: profile.phone,
-    planName: profile.planName,
-    projectName: input.projectName,
-    prompt: generated.prompt,
-    purpose: input.purpose,
-    result: safeResult.content,
-    sensitiveCheckResult,
-    storeName: profile.storeName,
-    storeType: profile.storeType,
-    targetCustomer: input.targetCustomer,
-    usedStoreProfile: Boolean(storeProfileSummary),
-    userId: profile.id,
-    userNote: "",
-  });
 
-  return {
-    generationId: record.id,
-    message: "已生成内容，已自动处理常见敏感表达，请发布前结合门店实际情况人工确认。",
-    result: safeResult.content,
-    success: true,
-  };
+  try {
+    const generated = await generateSafeSceneContent({
+      input,
+      scene,
+      storeProfile: {
+        ...profile,
+        storeProfileSummary,
+      },
+      userId: profile.id,
+    });
+    const commonRecord = {
+      copied: false,
+      elapsedMs: generated.elapsedMs,
+      extraInfo: input.extraInfo,
+      finishReason: generated.finishReason,
+      generationType: scene,
+      modelName: generated.model || "unknown",
+      modelProvider: generated.provider || "unknown",
+      phone: profile.phone,
+      planName: profile.planName,
+      projectName: input.projectName,
+      prompt: generated.prompt,
+      promptVersion: generated.promptVersion,
+      purpose: input.purpose,
+      rawResponse: generated.rawResponse,
+      requestId: generated.requestId,
+      storeName: profile.storeName,
+      storeType: profile.storeType,
+      targetCustomer: input.targetCustomer,
+      tokenUsage: generated.tokenUsage,
+      usedStoreProfile: Boolean(storeProfileSummary),
+      userId: profile.id,
+      userNote: "",
+    };
+
+    if (generated.status === "failed") {
+      await store.createGeneration({
+        ...commonRecord,
+        cleanedContent: "",
+        errorCode: generated.errorCode,
+        errorMessage: generated.errorMessage,
+        result: "",
+        sensitiveCheckResult: "生成失败，未进入敏感词处理。",
+        status: "failed",
+      });
+      return { message: generated.publicMessage, success: false };
+    }
+
+    const safeResult = replaceSensitiveWords(generated.cleanedContent);
+    const sensitiveCheckResult =
+      safeResult.replacements.length > 0
+        ? `已自动替换风险表达：${safeResult.replacements.map((item) => `${item.from}→${item.to}`).join("、")}。`
+        : "未发现明显高风险表达。";
+    const record = await store.createGeneration({
+      ...commonRecord,
+      cleanedContent: safeResult.content,
+      errorCode: "",
+      errorMessage: "",
+      result: safeResult.content,
+      sensitiveCheckResult,
+      status: "success",
+    });
+
+    return {
+      generationId: record.id,
+      message: "已生成内容，已自动处理常见敏感表达，请发布前结合门店实际情况人工确认。",
+      result: safeResult.content,
+      success: true,
+    };
+  } catch {
+    return { message: "生成失败，请稍后重试。", success: false };
+  }
 }
 
 function getPermissionMessage(reason: string): string {

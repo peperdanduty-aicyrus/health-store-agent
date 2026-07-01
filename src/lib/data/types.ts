@@ -47,6 +47,8 @@ export type CreateOpeningApplicationInput = Omit<
   "id" | "openedUserId" | "status" | "createdAt" | "updatedAt"
 >;
 
+export type GenerationStatus = "success" | "failed" | "legacy";
+
 export type GenerationRecord = {
   id: string;
   userId: string;
@@ -67,10 +69,33 @@ export type GenerationRecord = {
   userNote: string;
   modelProvider: string;
   modelName: string;
+  status: GenerationStatus;
+  rawResponse: string;
+  cleanedContent: string;
+  errorCode: string;
+  errorMessage: string;
+  requestId: string;
+  finishReason: string;
+  tokenUsage: string;
+  elapsedMs: number | null;
+  promptVersion: string;
   createdAt: string;
 };
 
-export type CreateGenerationInput = Omit<GenerationRecord, "id" | "createdAt">;
+type GenerationDiagnosticFields =
+  | "status"
+  | "rawResponse"
+  | "cleanedContent"
+  | "errorCode"
+  | "errorMessage"
+  | "requestId"
+  | "finishReason"
+  | "tokenUsage"
+  | "elapsedMs"
+  | "promptVersion";
+
+export type CreateGenerationInput = Omit<GenerationRecord, "id" | "createdAt" | GenerationDiagnosticFields> &
+  Partial<Pick<GenerationRecord, GenerationDiagnosticFields>>;
 
 export type GenerationFilter = {
   userId?: string;

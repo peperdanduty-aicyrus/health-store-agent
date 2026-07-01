@@ -15,7 +15,7 @@
     {
       "binding": "DB",
       "database_name": "health-agent-preview-db",
-      "database_id": "PENDING_CREATE"
+      "database_id": "efe75183-7001-4da7-8e3a-30528a3ef5eb"
     }
   ],
   "vars": {
@@ -27,4 +27,3 @@
     "WORKBENCH_PUBLIC_TEST_ENABLED": "false"
   }
 }
-

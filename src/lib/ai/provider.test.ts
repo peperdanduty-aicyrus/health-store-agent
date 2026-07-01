@@ -36,9 +36,8 @@ describe("AI provider layer", () => {
     });
   });
 
-  it("keeps Qwen behind an OpenAI-compatible provider and reports missing API key clearly", async () => {
-    await expect(
-      generateContent({
+  it("keeps Qwen behind an OpenAI-compatible provider without exposing environment variable names", async () => {
+    const error = await generateContent({
         input: {
           extraInfo: "",
           projectName: "洁牙",
@@ -49,8 +48,10 @@ describe("AI provider layer", () => {
         scene: "meituan_dianping",
         storeProfile,
         userId: "user_standard_001",
-      }),
-    ).rejects.toThrow("AI_API_KEY is required");
+      }).catch((caught: unknown) => caught);
+
+    expect(error).toMatchObject({ code: "missing_configuration" });
+    expect(String(error)).not.toContain("AI_API_KEY");
   });
 
   it("generates a mock store profile summary without requiring an API key", async () => {

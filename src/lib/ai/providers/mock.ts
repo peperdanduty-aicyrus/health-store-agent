@@ -32,7 +32,6 @@ function buildMockSceneBody(scene: SceneKey, storeProfile: StoreProfileForPrompt
       body: base,
       commentGuide: "有相关问题可以在评论区留言，我们会结合实际情况回复。",
       coverTexts: ["到店前先问清楚", "适合自己的才重要", "日常养护小提醒"],
-      sensitiveCheck: [],
       tags: ["本地健康", "日常养护", "到店评估"],
       titles: [
         `${input.projectName}适合哪些人先了解？`,
@@ -49,7 +48,6 @@ function buildMockSceneBody(scene: SceneKey, storeProfile: StoreProfileForPrompt
       closingGuide: "想了解可以留言，先判断是否适合再安排到店。",
       imageIdeas: ["门店环境", "项目准备", "日常科普图"],
       longPosts: [base],
-      sensitiveCheck: [],
       shortPosts: [`${input.projectName}最近咨询的人不少，建议先了解清楚再决定。`, base],
     };
   }
@@ -63,7 +61,6 @@ function buildMockSceneBody(scene: SceneKey, storeProfile: StoreProfileForPrompt
         { body: "到店前建议先说明自己的基础情况。", heading: "到店前准备" },
         { body: "具体体验因人而异，方案以评估为准。", heading: "注意事项" },
       ],
-      sensitiveCheck: [],
       titles: [`${input.projectName}到店前先看这篇`, `${input.targetCustomer}常问的几个问题`, "日常养护先从了解开始"],
     };
   }
@@ -73,7 +70,6 @@ function buildMockSceneBody(scene: SceneKey, storeProfile: StoreProfileForPrompt
       conversionScript: "到店前建议先确认时间和适合情况。",
       highlights: ["流程清楚", "先评估再安排", "体验因人而异"],
       purchaseNotes: ["下单前建议先确认可预约时间", "具体方案以到店评估为准"],
-      sensitiveCheck: [],
       subtitles: [`适合${input.targetCustomer}先了解`, "到店评估后再安排"],
       targetUsers: [input.targetCustomer],
       titles: [`${input.projectName}到店体验`, `${storeProfile.storeName}${input.projectName}`, `${input.projectName}日常养护参考`],
@@ -83,7 +79,6 @@ function buildMockSceneBody(scene: SceneKey, storeProfile: StoreProfileForPrompt
   if (scene === "review_reply") {
     return {
       reviews: ["环境舒服，沟通也很细致，整体体验比较安心。", "到店前问的问题都有人耐心解答，流程比较清楚。", "适合想先了解再决定的朋友，体验感不错。"],
-      sensitiveCheck: [],
     };
   }
 
@@ -106,7 +101,6 @@ function buildMockSceneBody(scene: SceneKey, storeProfile: StoreProfileForPrompt
         subtitleSuggestions: ["先了解，再决定", `${input.projectName}日常养护参考`, "到店前建议先咨询"],
         visualSuggestions: ["门店门头和接待区", "项目准备过程", "店员和顾客沟通细节"],
       },
-      sensitiveCheck: [],
       spokenCopy: `${input.projectName}不是每个人都要马上安排，先把自己的情况说清楚，再看是否适合到店了解。我们更希望你明明白白体验，不要冲动办卡。`,
       subtitleCopy: [`${input.projectName}先别急着办卡`, "先问清楚适不适合", "流程、时间、注意事项都要了解", "实际体验因人而异", "需要的话可以先留言咨询"].join("\n"),
       videoTitles: [
@@ -127,6 +121,5 @@ function buildMockSceneBody(scene: SceneKey, storeProfile: StoreProfileForPrompt
         question: "这个适合我吗？",
       },
     ],
-    sensitiveCheck: [],
   };
 }

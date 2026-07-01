@@ -2,13 +2,14 @@ import { CustomerShell } from "@/components/customer/CustomerShell";
 import { SceneCardGrid } from "@/components/customer/SceneCardGrid";
 import { getDataStore } from "@/lib/data/repository";
 import { requireUser } from "@/lib/auth/session";
+import { isBillableGeneration } from "@/lib/ai/generation-record";
 
 export default async function CustomerAppPage() {
   const profile = await requireUser();
   const store = await getDataStore();
   const today = new Date().toISOString().slice(0, 10);
   const todayCount = (await store.listGenerations({ userId: profile.id }))
-    .filter((record) => record.createdAt.slice(0, 10) === today).length;
+    .filter((record) => record.createdAt.slice(0, 10) === today && isBillableGeneration(record)).length;
 
   return (
     <CustomerShell profile={profile}>

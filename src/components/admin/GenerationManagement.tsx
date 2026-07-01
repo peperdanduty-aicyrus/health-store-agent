@@ -9,6 +9,7 @@ import {
 } from "@/app/actions";
 import type { GenerationRecord } from "@/lib/data/types";
 import { sceneDefinitions } from "@/lib/domain/scenes";
+import { normalizeGenerationStatus } from "@/lib/ai/generation-record";
 
 const initialState: DeleteActionState = {
   message: "",
@@ -62,7 +63,8 @@ export function GenerationManagement({ generations }: { generations: GenerationR
               </div>
               <p className="mt-2 text-sm leading-6 text-ink/62">
                 {record.phone} / {sceneDefinitions[record.generationType].label} / {record.projectName} / 店铺资料：
-                {record.usedStoreProfile ? "是" : "否"} / {record.modelProvider}:{record.modelName}
+                {record.usedStoreProfile ? "是" : "否"} / {record.modelProvider}:{record.modelName} / 状态：
+                {statusLabel(normalizeGenerationStatus(record.status))}
               </p>
               <div className="mt-3 flex flex-wrap items-center justify-between gap-3">
                 <p className="text-sm leading-6 text-ink/62">复制：{record.copied ? "是" : "否"}；备注：{record.userNote || "无"}</p>
@@ -95,4 +97,8 @@ export function GenerationManagement({ generations }: { generations: GenerationR
       </div>
     </section>
   );
+}
+
+function statusLabel(status: GenerationRecord["status"]): string {
+  return status === "success" ? "成功" : status === "failed" ? "失败" : "旧记录";
 }

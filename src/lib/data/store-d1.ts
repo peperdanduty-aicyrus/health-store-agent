@@ -1,4 +1,5 @@
 import { seedProfiles, seedWorkbenchAccounts } from "./seed";
+import { normalizeGenerationDiagnostics } from "./generation-diagnostics";
 import type {
   CreateGenerationInput,
   CreateOpeningApplicationInput,
@@ -30,7 +31,34 @@ type D1PreparedStatementLike = {
 
 type ProfileRow = Omit<Profile, "disabled"> & { disabled: number };
 type ApplicationRow = OpeningApplication;
-type GenerationRow = Omit<GenerationRecord, "copied" | "usedStoreProfile"> & { copied: number; usedStoreProfile?: number };
+type GenerationRow = Omit<
+  GenerationRecord,
+  | "copied"
+  | "usedStoreProfile"
+  | "status"
+  | "rawResponse"
+  | "cleanedContent"
+  | "errorCode"
+  | "errorMessage"
+  | "requestId"
+  | "finishReason"
+  | "tokenUsage"
+  | "elapsedMs"
+  | "promptVersion"
+> & {
+  copied: number;
+  usedStoreProfile?: number;
+  status?: string | null;
+  raw_response?: string | null;
+  cleaned_content?: string | null;
+  error_code?: string | null;
+  error_message?: string | null;
+  request_id?: string | null;
+  finish_reason?: string | null;
+  token_usage?: string | null;
+  elapsed_ms?: number | null;
+  prompt_version?: string | null;
+};
 type StoreProfileRow = StoreProfileRecord;
 type WorkbenchAccountRow = Omit<WorkbenchAccount, "disabled"> & { disabled: number };
 type WorkbenchGenerationRow = Omit<WorkbenchGenerationRecord, "copied"> & { copied: number };
@@ -44,6 +72,7 @@ export async function createD1Store(db: D1DatabaseLike) {
     async createGeneration(input: CreateGenerationInput): Promise<GenerationRecord> {
       const record: GenerationRecord = {
         ...input,
+        ...normalizeGenerationDiagnostics(input),
         id: makeId("generation"),
         createdAt: new Date().toISOString(),
       };
@@ -53,8 +82,9 @@ export async function createD1Store(db: D1DatabaseLike) {
           `INSERT INTO generations (
             id, userId, phone, storeName, storeType, planName, generationType, projectName,
             targetCustomer, purpose, extraInfo, prompt, result, sensitiveCheckResult, copied, usedStoreProfile,
-            userNote, modelProvider, modelName, createdAt
-          ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+            userNote, modelProvider, modelName, status, raw_response, cleaned_content, error_code, error_message,
+            request_id, finish_reason, token_usage, elapsed_ms, prompt_version, createdAt
+          ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
         )
         .bind(
           record.id,
@@ -76,6 +106,16 @@ export async function createD1Store(db: D1DatabaseLike) {
           record.userNote,
           record.modelProvider,
           record.modelName,
+          record.status,
+          record.rawResponse,
+          record.cleanedContent,
+          record.errorCode,
+          record.errorMessage,
+          record.requestId,
+          record.finishReason,
+          record.tokenUsage,
+          record.elapsedMs,
+          record.promptVersion,
           record.createdAt,
         )
         .run();
@@ -541,6 +581,16 @@ async function ensureSchema(db: D1DatabaseLike) {
         userNote TEXT NOT NULL,
         modelProvider TEXT NOT NULL,
         modelName TEXT NOT NULL,
+        status TEXT,
+        raw_response TEXT,
+        cleaned_content TEXT,
+        error_code TEXT,
+        error_message TEXT,
+        request_id TEXT,
+        finish_reason TEXT,
+        token_usage TEXT,
+        elapsed_ms INTEGER,
+        prompt_version TEXT,
         createdAt TEXT NOT NULL
       )`,
 	    )
@@ -710,10 +760,21 @@ function mapProfile(row: ProfileRow): Profile {
 }
 
 function mapGeneration(row: GenerationRow): GenerationRecord {
+  const status = row.status === "success" || row.status === "failed" ? row.status : "legacy";
   return {
     ...row,
     copied: Boolean(row.copied),
     usedStoreProfile: Boolean(row.usedStoreProfile),
+    status,
+    rawResponse: row.raw_response ?? "",
+    cleanedContent: row.cleaned_content ?? "",
+    errorCode: row.error_code ?? "",
+    errorMessage: row.error_message ?? "",
+    requestId: row.request_id ?? "",
+    finishReason: row.finish_reason ?? "",
+    tokenUsage: row.token_usage ?? "",
+    elapsedMs: row.elapsed_ms ?? null,
+    promptVersion: row.prompt_version ?? "",
   };
 }
 

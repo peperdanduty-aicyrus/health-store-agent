@@ -1,13 +1,9 @@
 import { NextResponse, type NextRequest } from "next/server";
-import { canAccessPath, getAgentCyrusRedirectPath, getAppMode, shouldRedirectAgentCyrus } from "@/lib/app-mode";
+import { canAccessPath, getAppMode } from "@/lib/app-mode";
 
 export function middleware(request: NextRequest) {
   const { pathname } = request.nextUrl;
   const mode = getAppMode();
-
-  if (shouldRedirectAgentCyrus(pathname, mode)) {
-    return NextResponse.redirect(new URL(getAgentCyrusRedirectPath(pathname), request.url), 307);
-  }
 
   if (!canAccessPath(pathname, mode)) {
     return new NextResponse("Not Found", { status: 404 });

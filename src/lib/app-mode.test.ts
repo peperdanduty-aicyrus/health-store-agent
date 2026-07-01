@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { canAccessPath, getAgentCyrusRedirectPath, getAppMetadata, getAppMode, shouldRedirectAgentCyrus } from "./app-mode";
+import { canAccessPath, getAppMetadata, getAppMode } from "./app-mode";
 
 describe("app mode isolation", () => {
   it("parses known modes and defaults local development to mixed", () => {
@@ -13,6 +13,8 @@ describe("app mode isolation", () => {
     expect(canAccessPath("/survey/submit", "agent")).toBe(false);
     expect(canAccessPath("/yingyun/pos", "agent")).toBe(false);
     expect(canAccessPath("/api/survey/store-template", "agent")).toBe(false);
+    expect(canAccessPath("/cyrus", "agent")).toBe(false);
+    expect(canAccessPath("/cyrus/users", "agent")).toBe(false);
     expect(canAccessPath("/agent-admin/users", "agent")).toBe(true);
   });
 
@@ -25,12 +27,9 @@ describe("app mode isolation", () => {
     expect(canAccessPath("/cyrus", "survey")).toBe(true);
   });
 
-  it("keeps cyrus as survey admin and redirects only in agent mode", () => {
-    expect(shouldRedirectAgentCyrus("/cyrus", "agent")).toBe(true);
-    expect(shouldRedirectAgentCyrus("/cyrus/users", "agent")).toBe(true);
-    expect(getAgentCyrusRedirectPath("/cyrus/users")).toBe("/agent-admin/users");
-    expect(shouldRedirectAgentCyrus("/cyrus", "survey")).toBe(false);
+  it("keeps cyrus available only to the survey worker", () => {
     expect(canAccessPath("/cyrus/users", "survey")).toBe(false);
+    expect(canAccessPath("/cyrus", "survey")).toBe(true);
   });
 
   it("returns system-specific metadata", () => {

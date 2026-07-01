@@ -3,6 +3,7 @@
 import { useActionState } from "react";
 import { generateForScene, type GenerationFormState } from "@/app/actions";
 import { StructuredGenerationResult } from "./StructuredGenerationResult";
+import type { SceneKey } from "@/lib/domain/scenes";
 
 const initialState: GenerationFormState = {
   message: "",
@@ -22,7 +23,7 @@ const purposes = [
   "私域成交",
 ];
 
-export function GenerationForm({ scene }: { scene: string }) {
+export function GenerationForm({ scene }: { scene: SceneKey }) {
   const [state, action, pending] = useActionState(generateForScene, initialState);
 
   return (
@@ -50,7 +51,7 @@ export function GenerationForm({ scene }: { scene: string }) {
       {state.message ? (
         <p className={`mt-4 rounded-md p-3 text-sm ${state.success ? "bg-moss/10 text-moss" : "bg-coral/10 text-coral"}`}>{state.message}</p>
       ) : null}
-      {state.result ? <StructuredGenerationResult content={state.result} generationId={state.generationId} /> : null}
+      {state.result ? <StructuredGenerationResult content={state.result} generationId={state.generationId} scene={scene} /> : null}
     </form>
   );
 }

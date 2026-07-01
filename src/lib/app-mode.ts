@@ -1,7 +1,7 @@
 export type AppMode = "agent" | "mixed" | "survey";
 export type AppEnv = "preview" | "production" | "test";
 
-const agentPrefixes = ["/", "/login", "/app", "/agent-admin", "/cyrus", "/lvminglei", "/lvminglei-test", "/tutorial"];
+const agentPrefixes = ["/", "/login", "/app", "/agent-admin", "/lvminglei", "/lvminglei-test", "/tutorial"];
 const surveyPrefixes = ["/", "/survey", "/yingyun", "/api/survey"];
 
 export function getAppMode(value = process.env.APP_MODE): AppMode {
@@ -37,17 +37,6 @@ export function assertSurveyMode() {
   if (getAppMode() === "agent") {
     throw new Error("survey_mode_required");
   }
-}
-
-export function shouldRedirectAgentCyrus(pathname: string, mode = getAppMode()) {
-  const normalized = normalizePath(pathname);
-  return mode === "agent" && (normalized === "/cyrus" || normalized.startsWith("/cyrus/"));
-}
-
-export function getAgentCyrusRedirectPath(pathname: string) {
-  const normalized = normalizePath(pathname);
-  if (normalized === "/cyrus") return "/agent-admin";
-  return normalized.replace(/^\/cyrus/, "/agent-admin");
 }
 
 export function canAccessPath(pathname: string, mode = getAppMode()) {

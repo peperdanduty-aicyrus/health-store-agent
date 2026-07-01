@@ -19,9 +19,12 @@ export type GenerateContentInput = {
 
 export type GenerateContentResult = {
   content: string;
+  elapsedMs?: number;
+  finishReason?: string;
   model: string;
   prompt: string;
   provider: AiProvider;
+  tokenUsage?: Record<string, number>;
 };
 
 export type GenerateWorkbenchContentInput = {
