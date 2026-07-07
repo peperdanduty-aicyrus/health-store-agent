@@ -114,31 +114,47 @@ HTTP 检查：
 预览分支已推送：
 
 - `preview/agent-ai-output-safety`
-- `cc074bf159e3874673f3f8ba1ed1d8f455a40fb6`
+- 应用提交：`cc074bf159e3874673f3f8ba1ed1d8f455a40fb6`
+- 最新报告提交：`8d989b67acfab0c6cbe7face32894ccfd178e481`
 
 当前 Cloudflare CLI 状态：
 
 - `wrangler whoami` 显示未认证
 - 未设置 `CLOUDFLARE_API_TOKEN`
-- 因此未执行远程预览 D1 migration
-- 因此未执行 wrangler 预览部署
+- 因此未通过 CLI 执行远程预览 D1 migration
+- 因此未通过 CLI 执行 wrangler 预览部署
 
-已检查远程 Worker：
+已检查远程 Worker，GitHub 分支构建已更新：
 
 - `https://health-agent-preview.peperdanduty.workers.dev/`：200
-- `https://health-agent-preview.peperdanduty.workers.dev/demo`：仍为 404
+- `https://health-agent-preview.peperdanduty.workers.dev/login`：200
+- `https://health-agent-preview.peperdanduty.workers.dev/demo`：200
+- `https://health-agent-preview.peperdanduty.workers.dev/app`：未登录回到 `/login`
+- `https://health-agent-preview.peperdanduty.workers.dev/agent-admin`：200
+- `https://health-agent-preview.peperdanduty.workers.dev/survey`：404
+- `https://health-agent-preview.peperdanduty.workers.dev/yingyun`：404
+- `https://health-agent-preview.peperdanduty.workers.dev/cyrus`：404
+
+远程公开页自动化验收：
+
+- 桌面首页：通过
+- 手机首页：通过
+- 桌面登录页：通过
+- 手机登录页：通过
+- 桌面 demo 页：通过
+- 手机 demo 页：通过
 
 结论：
 
-- 远程 Worker 尚未更新到本次新提交，或该 Worker 没有自动绑定 GitHub 分支构建。
-- 需要 Cloudflare 授权后才能继续远程预览 migration、部署和后台真实验收。
+- 远程 Worker 已更新到本次预览分支。
+- 公开页和隔离路由已通过远程预览检查。
+- 由于 Cloudflare CLI 未授权，预览 D1 migration、后台登录、创建测试账号、生成场景和数据清理尚未执行。
 
 ## 9. 不能上线的风险
 
 上线前仍需完成：
 
 - 在预览 D1 执行 `0003_agent_store_expansion.sql`
-- 部署预览 Worker 到 `health-agent-preview`
 - 用预览后台创建测试账号
 - 验证 7 个生成场景
 - 验证来源渠道、7天体验、好评延长1个月
