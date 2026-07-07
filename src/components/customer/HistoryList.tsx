@@ -1,4 +1,5 @@
 import type { GenerationRecord } from "@/lib/data/types";
+import { formatChinaDateTime } from "@/lib/date-format";
 import { sceneDefinitions } from "@/lib/domain/scenes";
 import { getGenerationRecordPresentation } from "@/lib/ai/generation-record";
 import { StructuredGenerationResult } from "./StructuredGenerationResult";
@@ -16,7 +17,7 @@ export function HistoryList({ records }: { records: GenerationRecord[] }) {
           <article className="rounded-lg border border-ink/10 bg-white p-5 shadow-sm" key={record.id}>
             <div className="flex flex-col gap-1 sm:flex-row sm:items-center sm:justify-between">
               <p className="font-semibold text-ink">{record.projectName}</p>
-              <p className="text-xs text-ink/50">{new Date(record.createdAt).toLocaleString("zh-CN")}</p>
+              <p className="text-xs text-ink/50">{formatChinaDateTime(record.createdAt)}</p>
             </div>
             <p className="mt-2 text-sm text-ink/62">
               {sceneDefinitions[record.generationType].label} / {record.purpose} / 店铺资料：

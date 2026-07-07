@@ -22,8 +22,8 @@ const basicScenes: SceneKey[] = ["xiaohongshu", "moments", "official_account"];
 const planConfigs: Record<PlanName, PlanConfig> = {
   temporary_opening: {
     name: "temporary_opening",
-    label: "临时开通",
-    dailyLimit: 5,
+    label: "7天体验",
+    dailyLimit: 30,
     allowedScenes: allSceneKeys,
   },
   basic_monthly: {
@@ -46,7 +46,7 @@ const planConfigs: Record<PlanName, PlanConfig> = {
   },
   coaching: {
     name: "coaching",
-    label: "陪跑用户",
+    label: "代运营陪跑",
     dailyLimit: 60,
     allowedScenes: allSceneKeys,
   },

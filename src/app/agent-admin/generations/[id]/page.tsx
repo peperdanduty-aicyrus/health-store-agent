@@ -4,6 +4,7 @@ import { AdminShell } from "@/components/admin/AdminShell";
 import { StructuredGenerationResult } from "@/components/customer/StructuredGenerationResult";
 import { requireAdmin } from "@/lib/auth/session";
 import { getDataStore } from "@/lib/data/repository";
+import { formatChinaDateTime } from "@/lib/date-format";
 import { getPlanConfig } from "@/lib/domain/plans";
 import { sceneDefinitions } from "@/lib/domain/scenes";
 import { getGenerationRecordPresentation } from "@/lib/ai/generation-record";
@@ -39,7 +40,7 @@ export default async function AdminGenerationDetailPage({ params }: { params: Pr
         <Info label="门店类型" value={record.storeType} />
         <Info label="目标客户" value={record.targetCustomer} />
         <Info label="宣传目的" value={record.purpose} />
-        <Info label="生成时间" value={new Date(record.createdAt).toLocaleString("zh-CN")} />
+        <Info label="生成时间" value={formatChinaDateTime(record.createdAt)} />
         <Info label="复制状态" value={record.copied ? "已复制" : "未复制"} />
         <Info label="引用店铺资料" value={record.usedStoreProfile ? "是" : "否"} />
         <Info label="模型" value={`${record.modelProvider}:${record.modelName}`} />

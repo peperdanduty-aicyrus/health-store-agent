@@ -2,6 +2,46 @@ import { describe, expect, it } from "vitest";
 import { createMockStore } from "./store";
 
 describe("mock data store", () => {
+  it("stores source channels and extends a customer by 30 days with an audit note", () => {
+    const store = createMockStore({ profiles: [], applications: [] });
+    const application = store.createOpeningApplication({
+      cityArea: "",
+      contactName: "张店长",
+      interestedFeatures: "朋友圈文案",
+      note: "餐饮门店试用",
+      phone: "13900001111",
+      sourceChannel: "其他",
+      storeName: "测试餐厅",
+      storeType: "餐饮门店",
+      wechatId: "wx-test",
+    });
+    const user = store.createUser({
+      cityArea: "沈阳和平",
+      dailyLimit: 30,
+      disabled: false,
+      expiresAt: "2026-07-12",
+      mainProjects: "双人餐",
+      memberStatus: "paid",
+      password: "preview-only",
+      phone: "13900001111",
+      planName: "temporary_opening",
+      role: "user",
+      sourceChannel: "微信",
+      storeAdvantages: "社区老客多",
+      storeName: "测试餐厅",
+      storeType: "餐饮门店",
+    });
+
+    expect(application.sourceChannel).toBe("其他");
+    expect(user.sourceChannel).toBe("微信");
+    expect(store.extendUserExpiryByDays(user.id, 30, "好评延长1个月")).toMatchObject({
+      expiresAt: "2026-08-11",
+    });
+    expect(store.listAccountOperationLogs(user.id)).toEqual([
+      expect.objectContaining({ action: "good_review_extension", note: "好评延长1个月", days: 30 }),
+    ]);
+  });
+
   it("logs in the seeded admin account without exposing old sample customer seeds", () => {
     const store = createMockStore();
 

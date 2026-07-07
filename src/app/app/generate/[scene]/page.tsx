@@ -26,9 +26,8 @@ export default async function GenerateScenePage({ params }: { params: Promise<{ 
         <p className="mt-2 text-sm leading-6 text-ink/62">门店资料会自动带入，客户只需要填写本次活动或项目信息。</p>
       </section>
       <div className="mt-5">
-        <GenerationForm scene={sceneKey} />
+        <GenerationForm scene={sceneKey} storeType={profile.storeType} />
       </div>
     </CustomerShell>
   );
 }
-

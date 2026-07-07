@@ -15,6 +15,7 @@ describe("app mode isolation", () => {
     expect(canAccessPath("/api/survey/store-template", "agent")).toBe(false);
     expect(canAccessPath("/cyrus", "agent")).toBe(false);
     expect(canAccessPath("/cyrus/users", "agent")).toBe(false);
+    expect(canAccessPath("/demo", "agent")).toBe(true);
     expect(canAccessPath("/agent-admin/users", "agent")).toBe(true);
   });
 
@@ -22,6 +23,7 @@ describe("app mode isolation", () => {
     expect(canAccessPath("/login", "survey")).toBe(false);
     expect(canAccessPath("/app/history", "survey")).toBe(false);
     expect(canAccessPath("/agent-admin", "survey")).toBe(false);
+    expect(canAccessPath("/demo", "survey")).toBe(false);
     expect(canAccessPath("/lvminglei", "survey")).toBe(false);
     expect(canAccessPath("/survey", "survey")).toBe(true);
     expect(canAccessPath("/cyrus", "survey")).toBe(true);
@@ -33,7 +35,7 @@ describe("app mode isolation", () => {
   });
 
   it("returns system-specific metadata", () => {
-    expect(getAppMetadata("agent").title).toContain("获客文案助手");
+    expect(getAppMetadata("agent").title).toBe("本地门店 AI 获客文案助手");
     expect(getAppMetadata("survey").title).toBe("商场经营调研系统");
   });
 });

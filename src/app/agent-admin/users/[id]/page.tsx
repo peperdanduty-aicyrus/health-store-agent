@@ -5,6 +5,7 @@ import { AdminShell } from "@/components/admin/AdminShell";
 import { getPlanConfig } from "@/lib/domain/plans";
 import { requireAdmin } from "@/lib/auth/session";
 import { getDataStore } from "@/lib/data/repository";
+import { formatChinaDateTime } from "@/lib/date-format";
 
 export default async function AdminUserDetailPage({ params }: { params: Promise<{ id: string }> }) {
   const admin = await requireAdmin();
@@ -17,6 +18,7 @@ export default async function AdminUserDetailPage({ params }: { params: Promise<
   }
 
   const generations = await store.listGenerations({ userId: user.id });
+  const operationLogs = await store.listAccountOperationLogs(user.id);
 
   return (
     <AdminShell profile={admin}>
@@ -37,10 +39,23 @@ export default async function AdminUserDetailPage({ params }: { params: Promise<
           <Info label="城市 / 区域" value={user.cityArea} />
           <Info label="每日次数" value={`${user.dailyLimit} 次`} />
           <Info label="生成记录" value={`${generations.length} 条`} />
+          <Info label="来源渠道" value={user.sourceChannel} />
         </div>
       </section>
 
       <CustomerAccountActions user={user} />
+      <section className="mt-5 rounded-lg border border-ink/10 bg-white p-5 shadow-sm">
+        <h3 className="font-semibold text-ink">账号操作记录</h3>
+        {operationLogs.length ? (
+          <div className="mt-3 space-y-2">
+            {operationLogs.map((log) => (
+              <p className="rounded-md bg-paper p-3 text-sm text-ink/65" key={log.id}>
+                {log.note}，增加{log.days}天，记录时间：{formatChinaDateTime(log.createdAt)}
+              </p>
+            ))}
+          </div>
+        ) : <p className="mt-3 text-sm text-ink/55">暂无操作记录。</p>}
+      </section>
     </AdminShell>
   );
 }

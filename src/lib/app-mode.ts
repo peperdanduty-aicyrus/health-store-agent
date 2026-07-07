@@ -1,7 +1,7 @@
 export type AppMode = "agent" | "mixed" | "survey";
 export type AppEnv = "preview" | "production" | "test";
 
-const agentPrefixes = ["/", "/login", "/app", "/agent-admin", "/lvminglei", "/lvminglei-test", "/tutorial"];
+const agentPrefixes = ["/", "/login", "/demo", "/app", "/agent-admin", "/lvminglei", "/lvminglei-test", "/tutorial"];
 const surveyPrefixes = ["/", "/survey", "/yingyun", "/api/survey"];
 
 export function getAppMode(value = process.env.APP_MODE): AppMode {
@@ -22,8 +22,8 @@ export function getAppMetadata(mode = getAppMode()) {
     };
   }
   return {
-    description: "面向中医馆、推拿馆、口腔门诊、健康管理中心和宠物医院的 AI 获客文案工具，可先免费试用。",
-    title: "本地健康门店 AI 获客文案助手",
+    description: "适合九类本地门店免费体验 7 天的 AI 文案工具，覆盖图文、团单、评价、私域和短视频内容。",
+    title: "本地门店 AI 获客文案助手",
   };
 }
 
@@ -59,6 +59,7 @@ function isSurveyPath(pathname: string) {
 
 function isAgentPath(pathname: string) {
   return pathname === "/login" || pathname.startsWith("/login/") ||
+    pathname === "/demo" || pathname.startsWith("/demo/") ||
     pathname === "/app" || pathname.startsWith("/app/") ||
     pathname === "/agent-admin" || pathname.startsWith("/agent-admin/") ||
     pathname.startsWith("/cyrus/") ||

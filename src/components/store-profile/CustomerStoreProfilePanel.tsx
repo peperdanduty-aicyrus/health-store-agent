@@ -8,6 +8,7 @@ import {
   type StoreProfileActionState,
 } from "@/app/actions";
 import type { StoreProfileRecord } from "@/lib/data/types";
+import { formatChinaDateTime } from "@/lib/date-format";
 import { getVisibleActionStates } from "./textProfileState";
 
 const initialState: StoreProfileActionState = {
@@ -63,7 +64,7 @@ export function CustomerStoreProfilePanel({ record }: { record: StoreProfileReco
         <div className="grid gap-3 sm:grid-cols-3">
           <Info label="当前状态" value={record ? "已填写" : "未填写"} />
           <Info label="原始资料" value={record?.extractedText ? "已填写" : "未填写"} />
-          <Info label="更新时间" value={record ? new Date(record.updatedAt).toLocaleString("zh-CN") : "暂无"} />
+          <Info label="更新时间" value={record ? formatChinaDateTime(record.updatedAt) : "暂无"} />
         </div>
 
         {!record ? <p className="mt-5 rounded-md bg-paper p-3 text-sm text-ink/62">当前还没有填写店铺资料。</p> : null}

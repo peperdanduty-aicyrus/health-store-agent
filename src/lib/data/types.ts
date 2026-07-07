@@ -1,5 +1,6 @@
 import type { MemberStatus, PlanName } from "../domain/plans";
 import type { SceneKey } from "../domain/scenes";
+import type { SourceChannel } from "../domain/store-types";
 
 export type UserRole = "admin" | "user";
 
@@ -13,6 +14,7 @@ export type Profile = {
   cityArea: string;
   mainProjects: string;
   storeAdvantages: string;
+  sourceChannel: SourceChannel;
   planName: PlanName;
   memberStatus: MemberStatus;
   expiresAt: string;
@@ -22,9 +24,11 @@ export type Profile = {
   updatedAt: string;
 };
 
-export type CreateUserInput = Omit<Profile, "id" | "createdAt" | "updatedAt">;
+export type CreateUserInput = Omit<Profile, "id" | "createdAt" | "updatedAt" | "sourceChannel"> & {
+  sourceChannel?: SourceChannel;
+};
 
-export type OpeningApplicationStatus = "new" | "contacted" | "opened";
+export type OpeningApplicationStatus = "new" | "contacted" | "opened" | "ignored";
 
 export type OpeningApplication = {
   id: string;
@@ -36,6 +40,7 @@ export type OpeningApplication = {
   wechatId: string;
   interestedFeatures: string;
   note: string;
+  sourceChannel: SourceChannel;
   openedUserId: string;
   status: OpeningApplicationStatus;
   createdAt: string;
@@ -44,8 +49,17 @@ export type OpeningApplication = {
 
 export type CreateOpeningApplicationInput = Omit<
   OpeningApplication,
-  "id" | "openedUserId" | "status" | "createdAt" | "updatedAt"
->;
+  "id" | "openedUserId" | "status" | "createdAt" | "updatedAt" | "sourceChannel"
+> & { sourceChannel?: SourceChannel };
+
+export type AccountOperationLog = {
+  id: string;
+  userId: string;
+  action: "good_review_extension";
+  days: number;
+  note: string;
+  createdAt: string;
+};
 
 export type GenerationStatus = "success" | "failed" | "legacy";
 

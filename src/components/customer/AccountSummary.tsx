@@ -15,9 +15,14 @@ export function AccountSummary({ profile }: { profile: Profile }) {
         <Info label="套餐" value={plan.label} />
         <Info label="会员状态" value={profile.memberStatus} />
         <Info label="到期时间" value={profile.expiresAt} />
-        <Info label="每日次数" value={`${plan.dailyLimit} 次`} />
+        <Info label="每日次数" value={`${profile.dailyLimit || plan.dailyLimit} 次`} />
         <Info label="主营项目" value={profile.mainProjects || "未填写"} />
       </div>
+      {profile.planName === "temporary_opening" ? (
+        <p className="mt-4 rounded-md bg-moss/10 p-3 text-sm leading-6 text-moss">
+          当前为7天体验账号，满意后可开通正式套餐。好评后可联系管理员延长1个月。
+        </p>
+      ) : null}
     </section>
   );
 }

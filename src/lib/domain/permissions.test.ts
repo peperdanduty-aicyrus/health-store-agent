@@ -11,20 +11,20 @@ const baseProfile: PermissionProfile = {
 };
 
 describe("membership plan permissions", () => {
-  it("allows temporary opened users to use all scenes with a 5 generation daily limit", () => {
+  it("allows seven-day trial users to use all scenes with a 30 generation daily limit", () => {
     const profile: PermissionProfile = {
       ...baseProfile,
       planName: "temporary_opening",
     };
 
-    expect(getPlanConfig(profile.planName).dailyLimit).toBe(5);
+    expect(getPlanConfig(profile.planName)).toMatchObject({ label: "7天体验", dailyLimit: 30 });
     for (const scene of allSceneKeys) {
-      expect(canGenerate({ profile, scene, todayCount: 4, today: "2026-06-10" })).toMatchObject({
+      expect(canGenerate({ profile, scene, todayCount: 29, today: "2026-06-10" })).toMatchObject({
         allowed: true,
         remainingToday: 1,
       });
     }
-    expect(canGenerate({ profile, scene: "xiaohongshu", todayCount: 5, today: "2026-06-10" })).toMatchObject({
+    expect(canGenerate({ profile, scene: "xiaohongshu", todayCount: 30, today: "2026-06-10" })).toMatchObject({
       allowed: false,
       reason: "daily_limit_reached",
     });
@@ -63,6 +63,19 @@ describe("membership plan permissions", () => {
 
   it("blocks generation when the daily limit is reached", () => {
     expect(canGenerate({ profile: baseProfile, scene: "xiaohongshu", todayCount: 30, today: "2026-06-10" })).toMatchObject({
+      allowed: false,
+      reason: "daily_limit_reached",
+    });
+  });
+
+  it("honors an administrator-assigned daily limit without changing scene access", () => {
+    const profile: PermissionProfile = { ...baseProfile, dailyLimit: 10 };
+    expect(canGenerate({ profile, scene: "xiaohongshu", todayCount: 9, today: "2026-06-10" })).toMatchObject({
+      allowed: true,
+      dailyLimit: 10,
+      remainingToday: 1,
+    });
+    expect(canGenerate({ profile, scene: "xiaohongshu", todayCount: 10, today: "2026-06-10" })).toMatchObject({
       allowed: false,
       reason: "daily_limit_reached",
     });

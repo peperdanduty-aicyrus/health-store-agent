@@ -3,21 +3,12 @@
 import { useActionState } from "react";
 import { createMerchantAccount, type CreateMerchantFormState } from "@/app/actions";
 import type { OpeningApplication } from "@/lib/data/types";
+import { canonicalStoreTypes, sourceChannels } from "@/lib/domain/store-types";
 
 const initialState: CreateMerchantFormState = {
   message: "",
   success: false,
 };
-
-const storeTypes = [
-  "中医馆 / 中医诊所",
-  "推拿馆 / 理疗馆 / 艾灸馆 / SPA 馆",
-  "口腔门诊",
-  "医院科室 / 综合门诊",
-  "健康管理中心 / 体检中心",
-  "宠物医院",
-  "其他本地健康门店",
-];
 
 type CreateMerchantDefaults = Partial<{
   applicationId: string;
@@ -28,6 +19,7 @@ type CreateMerchantDefaults = Partial<{
   password: string;
   phone: string;
   planName: string;
+  sourceChannel: string;
   storeAdvantages: string;
   storeName: string;
   storeType: string;
@@ -58,7 +50,7 @@ export function CreateMerchantForm({ application }: { application?: OpeningAppli
             required
           >
             <option value="">请选择</option>
-            {storeTypes.map((type) => (
+            {canonicalStoreTypes.map((type) => (
               <option key={type} value={type}>
                 {type}
               </option>
@@ -74,11 +66,24 @@ export function CreateMerchantForm({ application }: { application?: OpeningAppli
             name="planName"
             required
           >
-            <option value="temporary_opening">临时开通</option>
+            <option value="temporary_opening">7天体验</option>
             <option value="basic_monthly">基础月卡</option>
             <option value="standard_monthly">标准月卡</option>
             <option value="internal_yearly">正式年卡</option>
             <option value="coaching">代运营陪跑</option>
+          </select>
+        </label>
+        <label className="text-sm font-medium text-ink/75">
+          来源渠道
+          <select
+            defaultValue={defaults.sourceChannel || "其他"}
+            className="mt-2 min-h-11 w-full rounded-md border border-ink/12 bg-paper px-3 outline-none focus:border-moss"
+            name="sourceChannel"
+            required
+          >
+            {sourceChannels.map((channel) => (
+              <option key={channel} value={channel}>{channel}</option>
+            ))}
           </select>
         </label>
         <Field defaultValue={defaults.dailyLimit || "30"} label="每日次数" name="dailyLimit" required type="number" />
@@ -111,12 +116,13 @@ function getDefaults(application?: OpeningApplication): CreateMerchantDefaults {
   return {
     applicationId: application.id,
     cityArea: application.cityArea,
-    dailyLimit: "5",
-    expiresAt: addDays(new Date(), 3),
+    dailyLimit: "30",
+    expiresAt: addDays(new Date(), 7),
     mainProjects: application.note,
     password: "",
     phone: application.phone,
     planName: "temporary_opening",
+    sourceChannel: application.sourceChannel,
     storeAdvantages: [application.contactName, application.wechatId].filter(Boolean).join(" / "),
     storeName: application.storeName,
     storeType: application.storeType,

@@ -12,6 +12,7 @@ import type { CreateUserInput, Profile, StoreProfileUploadBy, UpsertStoreProfile
 import type { PlanName } from "@/lib/domain/plans";
 import { canGenerate } from "@/lib/domain/permissions";
 import type { SceneKey } from "@/lib/domain/scenes";
+import { normalizeSourceChannel, normalizeStoreType } from "@/lib/domain/store-types";
 import { replaceSensitiveWords } from "@/lib/safety/sensitive-words";
 
 export type OpeningApplicationFormState = {
@@ -77,15 +78,16 @@ export async function submitOpeningApplication(
     interestedFeatures: String(values.interestedFeatures || ""),
     note: String(values.note || ""),
     phone: String(values.phone),
+    sourceChannel: "其他",
     storeName: String(values.storeName),
-    storeType: String(values.storeType),
+    storeType: normalizeStoreType(String(values.storeType)),
     wechatId: String(values.wechatId || values.phone),
   });
   revalidatePath("/agent-admin");
   revalidatePath("/agent-admin/applications");
 
   return {
-    message: "申请已提交，请添加微信领取试用账号。人工确认后会为你发放登录账号和密码。",
+    message: "已提交申请。请添加微信或等待人工确认，确认后发放7天体验账号。",
     success: true,
   };
 }
@@ -165,9 +167,10 @@ export async function createMerchantAccount(
     phone: String(formData.get("phone")),
     planName,
     role: "user",
+    sourceChannel: normalizeSourceChannel(String(formData.get("sourceChannel") || "其他")),
     storeAdvantages: String(formData.get("storeAdvantages") || ""),
     storeName: String(formData.get("storeName")),
-    storeType: String(formData.get("storeType")),
+    storeType: normalizeStoreType(String(formData.get("storeType"))),
   };
 
   const created = await store.createUser(input);
@@ -234,6 +237,28 @@ export async function resetCustomerPassword(
   revalidatePath("/agent-admin/users");
   revalidatePath(`/agent-admin/users/${userId}`);
   return { message: "客户密码已重置。", success: true };
+}
+
+export async function extendCustomerForGoodReview(
+  _previousState: CreateMerchantFormState,
+  formData: FormData,
+): Promise<CreateMerchantFormState> {
+  const admin = await requireAdminProfile();
+  if (!admin) {
+    return { message: "请先登录管理员后台。", success: false };
+  }
+
+  const userId = String(formData.get("userId") || "");
+  const updated = await (await getDataStore()).extendUserExpiryByDays(userId, 30, "好评延长1个月");
+  if (!updated) {
+    return { message: "未找到可延期的客户账号。", success: false };
+  }
+
+  revalidatePath("/agent-admin/users");
+  revalidatePath(`/agent-admin/users/${userId}`);
+  revalidatePath("/app");
+  revalidatePath("/app/account");
+  return { message: `已延长30天，新到期日：${updated.expiresAt}。`, success: true };
 }
 
 export async function deleteOpeningApplication(

@@ -4,6 +4,7 @@ import { useActionState } from "react";
 import { generateForScene, type GenerationFormState } from "@/app/actions";
 import { StructuredGenerationResult } from "./StructuredGenerationResult";
 import type { SceneKey } from "@/lib/domain/scenes";
+import { getStoreTypePlaceholders } from "@/lib/domain/store-types";
 
 const initialState: GenerationFormState = {
   message: "",
@@ -23,19 +24,19 @@ const purposes = [
   "私域成交",
 ];
 
-export function GenerationForm({ scene }: { scene: SceneKey }) {
+export function GenerationForm({ scene, storeType }: { scene: SceneKey; storeType: string }) {
   const [state, action, pending] = useActionState(generateForScene, initialState);
+  const placeholders = getStoreTypePlaceholders(storeType);
 
   return (
     <form action={action} className="rounded-lg border border-ink/10 bg-white p-5 shadow-sm">
       <input name="scene" type="hidden" value={scene} />
       <div className="grid gap-3 sm:grid-cols-2">
-        <Field label="项目名称" name="projectName" placeholder="例如小儿推拿、肩颈调理、洁牙、艾灸" />
-        <Field label="目标客户" name="targetCustomer" placeholder="例如宝妈、上班族、中老年人、附近居民" />
+        <Field label="项目名称" name="projectName" placeholder={placeholders.projectName} />
+        <Field label="目标客户" name="targetCustomer" placeholder={placeholders.targetCustomer} />
         <label className="text-sm font-medium text-ink/75">
           宣传目的
-          <select className="mt-2 min-h-11 w-full rounded-md border border-ink/12 bg-paper px-3 outline-none focus:border-moss" name="purpose" required>
-            <option value="">请选择</option>
+          <select className="mt-2 min-h-11 w-full rounded-md border border-ink/12 bg-paper px-3 outline-none focus:border-moss" defaultValue="引流到店" name="purpose" required>
             {purposes.map((purpose) => (
               <option key={purpose} value={purpose}>
                 {purpose}

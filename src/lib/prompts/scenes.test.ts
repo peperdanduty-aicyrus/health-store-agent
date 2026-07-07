@@ -80,4 +80,27 @@ describe("scene prompt builder", () => {
     expect(prompt).toContain("生成结果中不要出现“根据店铺资料”");
     expect(prompt).not.toContain("PDF");
   });
+
+  it("adapts safety language for dining stores without health-only wording", () => {
+    const prompt = buildScenePrompt("moments", { ...storeProfile, storeType: "餐饮门店" }, {
+      ...input,
+      projectName: "双人餐",
+    });
+
+    expect(prompt).toContain("请为本地门店生成朋友圈文案");
+    expect(prompt).toContain("全城第一");
+    expect(prompt).toContain("适合聚餐");
+    expect(prompt).not.toContain("请为本地健康门店生成");
+  });
+
+  it("adapts safety language for children education stores", () => {
+    const prompt = buildScenePrompt("xiaohongshu", { ...storeProfile, storeType: "儿童教培" }, {
+      ...input,
+      projectName: "少儿口才试听课",
+    });
+
+    expect(prompt).toContain("保证提分");
+    expect(prompt).toContain("试听体验");
+    expect(prompt).toContain("根据孩子情况选择");
+  });
 });

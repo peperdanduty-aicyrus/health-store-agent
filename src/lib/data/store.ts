@@ -1,6 +1,8 @@
 import { seedGenerations, seedProfiles, seedOpeningApplications, seedWorkbenchAccounts } from "./seed";
 import { normalizeGenerationDiagnostics } from "./generation-diagnostics";
+import { normalizeSourceChannel, normalizeStoreType } from "../domain/store-types";
 import type {
+  AccountOperationLog,
   CreateGenerationInput,
   CreateOpeningApplicationInput,
   CreateUserInput,
@@ -19,6 +21,7 @@ import type {
 } from "./types";
 
 type StoreState = {
+  accountOperationLogs: AccountOperationLog[];
   applications: OpeningApplication[];
   generations: GenerationRecord[];
   profiles: Profile[];
@@ -29,6 +32,7 @@ type StoreState = {
 
 export function createMockStore(initialState?: Partial<StoreState>) {
   const state: StoreState = {
+    accountOperationLogs: clone(initialState?.accountOperationLogs ?? []),
     applications: clone(initialState?.applications ?? seedOpeningApplications),
     generations: clone(initialState?.generations ?? seedGenerations),
     profiles: clone(initialState?.profiles ?? seedProfiles),
@@ -52,6 +56,8 @@ export function createMockStore(initialState?: Partial<StoreState>) {
     createOpeningApplication(input: CreateOpeningApplicationInput): OpeningApplication {
       const application: OpeningApplication = {
         ...input,
+        sourceChannel: normalizeSourceChannel(input.sourceChannel),
+        storeType: normalizeStoreType(input.storeType),
         id: makeId("application", state.applications.length + 1),
         openedUserId: "",
         status: "new",
@@ -65,6 +71,8 @@ export function createMockStore(initialState?: Partial<StoreState>) {
     createUser(input: CreateUserInput): Profile {
       const user: Profile = {
         ...input,
+        sourceChannel: normalizeSourceChannel(input.sourceChannel),
+        storeType: normalizeStoreType(input.storeType),
         id: makeId("user", state.profiles.length + 1),
         createdAt: new Date().toISOString(),
         updatedAt: new Date().toISOString(),
@@ -144,6 +152,10 @@ export function createMockStore(initialState?: Partial<StoreState>) {
 
     listApplications(): OpeningApplication[] {
       return [...state.applications];
+    },
+
+    listAccountOperationLogs(userId?: string): AccountOperationLog[] {
+      return state.accountOperationLogs.filter((record) => !userId || record.userId === userId);
     },
 
     listGenerations(filter: GenerationFilter = {}): GenerationRecord[] {
@@ -281,6 +293,22 @@ export function createMockStore(initialState?: Partial<StoreState>) {
       return profile;
     },
 
+    extendUserExpiryByDays(id: string, days: number, note: string): Profile | null {
+      const profile = state.profiles.find((item) => item.id === id);
+      if (!profile || profile.role !== "user") return null;
+      profile.expiresAt = addDays(profile.expiresAt, days);
+      profile.updatedAt = new Date().toISOString();
+      state.accountOperationLogs.unshift({
+        id: makeId("account_operation", state.accountOperationLogs.length + 1),
+        userId: profile.id,
+        action: "good_review_extension",
+        days,
+        note,
+        createdAt: new Date().toISOString(),
+      });
+      return profile;
+    },
+
     updateWorkbenchAccountDisabled(id: string, disabled: boolean): WorkbenchAccount | null {
       const account = state.workbenchAccounts.find((item) => item.id === id);
       if (!account) {
@@ -313,6 +341,12 @@ function makeId(prefix: string, index: number): string {
 
 function matches<T>(expected: T | undefined, actual: T): boolean {
   return expected === undefined || expected === actual;
+}
+
+function addDays(value: string, days: number): string {
+  const date = new Date(`${value.slice(0, 10)}T00:00:00.000Z`);
+  date.setUTCDate(date.getUTCDate() + days);
+  return date.toISOString().slice(0, 10);
 }
 
 type GlobalWithMockStore = typeof globalThis & {

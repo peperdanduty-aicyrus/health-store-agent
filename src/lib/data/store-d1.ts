@@ -1,6 +1,8 @@
 import { seedProfiles, seedWorkbenchAccounts } from "./seed";
 import { normalizeGenerationDiagnostics } from "./generation-diagnostics";
+import { normalizeSourceChannel, normalizeStoreType } from "../domain/store-types";
 import type {
+  AccountOperationLog,
   CreateGenerationInput,
   CreateOpeningApplicationInput,
   CreateUserInput,
@@ -29,8 +31,9 @@ type D1PreparedStatementLike = {
   run(): Promise<unknown>;
 };
 
-type ProfileRow = Omit<Profile, "disabled"> & { disabled: number };
-type ApplicationRow = OpeningApplication;
+type ProfileRow = Omit<Profile, "disabled" | "sourceChannel"> & { disabled: number; sourceChannel?: string | null };
+type ApplicationRow = Omit<OpeningApplication, "sourceChannel"> & { sourceChannel?: string | null };
+type AccountOperationLogRow = AccountOperationLog;
 type GenerationRow = Omit<
   GenerationRecord,
   | "copied"
@@ -127,6 +130,8 @@ export async function createD1Store(db: D1DatabaseLike) {
       const now = new Date().toISOString();
       const application: OpeningApplication = {
         ...input,
+        sourceChannel: normalizeSourceChannel(input.sourceChannel),
+        storeType: normalizeStoreType(input.storeType),
         id: makeId("application"),
         openedUserId: "",
         status: "new",
@@ -138,8 +143,8 @@ export async function createD1Store(db: D1DatabaseLike) {
         .prepare(
           `INSERT INTO applications (
             id, storeName, storeType, cityArea, contactName, phone, wechatId,
-            interestedFeatures, note, openedUserId, status, createdAt, updatedAt
-          ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+            interestedFeatures, note, sourceChannel, openedUserId, status, createdAt, updatedAt
+          ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
         )
         .bind(
           application.id,
@@ -151,6 +156,7 @@ export async function createD1Store(db: D1DatabaseLike) {
           application.wechatId,
           application.interestedFeatures,
           application.note,
+          application.sourceChannel,
           application.openedUserId,
           application.status,
           application.createdAt,
@@ -165,6 +171,8 @@ export async function createD1Store(db: D1DatabaseLike) {
       const now = new Date().toISOString();
       const user: Profile = {
         ...input,
+        sourceChannel: normalizeSourceChannel(input.sourceChannel),
+        storeType: normalizeStoreType(input.storeType),
         id: makeId("user"),
         createdAt: now,
         updatedAt: now,
@@ -347,6 +355,14 @@ export async function createD1Store(db: D1DatabaseLike) {
       const { results = [] } = await db
         .prepare("SELECT * FROM applications ORDER BY createdAt DESC")
         .all<ApplicationRow>();
+      return results.map(mapApplication);
+    },
+
+    async listAccountOperationLogs(userId?: string): Promise<AccountOperationLog[]> {
+      const statement = userId
+        ? db.prepare("SELECT * FROM account_operation_logs WHERE userId = ? ORDER BY createdAt DESC").bind(userId)
+        : db.prepare("SELECT * FROM account_operation_logs ORDER BY createdAt DESC");
+      const { results = [] } = await statement.all<AccountOperationLogRow>();
       return results;
     },
 
@@ -475,7 +491,8 @@ export async function createD1Store(db: D1DatabaseLike) {
         )
         .bind(status, openedUserId, openedUserId, new Date().toISOString(), id)
         .run();
-      return db.prepare("SELECT * FROM applications WHERE id = ?").bind(id).first<ApplicationRow>();
+      const row = await db.prepare("SELECT * FROM applications WHERE id = ?").bind(id).first<ApplicationRow>();
+      return row ? mapApplication(row) : null;
     },
 
     async updateUserDisabled(id: string, disabled: boolean): Promise<Profile | null> {
@@ -491,6 +508,22 @@ export async function createD1Store(db: D1DatabaseLike) {
       await db.prepare("UPDATE profiles SET password = ?, updatedAt = ? WHERE id = ?").bind(password, new Date().toISOString(), id).run();
       const row = await db.prepare("SELECT * FROM profiles WHERE id = ?").bind(id).first<ProfileRow>();
       return row ? mapProfile(row) : null;
+    },
+
+    async extendUserExpiryByDays(id: string, days: number, note: string): Promise<Profile | null> {
+      const row = await db.prepare("SELECT * FROM profiles WHERE id = ? AND role = 'user'").bind(id).first<ProfileRow>();
+      if (!row) return null;
+      const expiresAt = addDays(row.expiresAt, days);
+      const now = new Date().toISOString();
+      await db.prepare("UPDATE profiles SET expiresAt = ?, updatedAt = ? WHERE id = ?").bind(expiresAt, now, id).run();
+      await db
+        .prepare(
+          "INSERT INTO account_operation_logs (id, userId, action, days, note, createdAt) VALUES (?, ?, ?, ?, ?, ?)",
+        )
+        .bind(makeId("account_operation"), id, "good_review_extension", days, note, now)
+        .run();
+      const updated = await db.prepare("SELECT * FROM profiles WHERE id = ?").bind(id).first<ProfileRow>();
+      return updated ? mapProfile(updated) : null;
     },
 
     async updateWorkbenchAccountDisabled(id: string, disabled: boolean): Promise<WorkbenchAccount | null> {
@@ -526,6 +559,7 @@ async function ensureSchema(db: D1DatabaseLike) {
         cityArea TEXT NOT NULL,
         mainProjects TEXT NOT NULL,
         storeAdvantages TEXT NOT NULL,
+        sourceChannel TEXT NOT NULL DEFAULT '其他',
         planName TEXT NOT NULL,
         memberStatus TEXT NOT NULL,
         expiresAt TEXT NOT NULL,
@@ -536,6 +570,8 @@ async function ensureSchema(db: D1DatabaseLike) {
       )`,
     )
     .run();
+
+  await ensureColumn(db, "profiles", "sourceChannel", "TEXT NOT NULL DEFAULT '其他'");
 
   await db
     .prepare(
@@ -549,6 +585,7 @@ async function ensureSchema(db: D1DatabaseLike) {
         wechatId TEXT NOT NULL,
         interestedFeatures TEXT NOT NULL,
         note TEXT NOT NULL,
+        sourceChannel TEXT NOT NULL DEFAULT '其他',
         openedUserId TEXT NOT NULL DEFAULT '',
         status TEXT NOT NULL,
         createdAt TEXT NOT NULL,
@@ -558,6 +595,20 @@ async function ensureSchema(db: D1DatabaseLike) {
     .run();
 
   await ensureColumn(db, "applications", "openedUserId", "TEXT NOT NULL DEFAULT ''");
+  await ensureColumn(db, "applications", "sourceChannel", "TEXT NOT NULL DEFAULT '其他'");
+
+  await db
+    .prepare(
+      `CREATE TABLE IF NOT EXISTS account_operation_logs (
+        id TEXT PRIMARY KEY,
+        userId TEXT NOT NULL,
+        action TEXT NOT NULL,
+        days INTEGER NOT NULL,
+        note TEXT NOT NULL,
+        createdAt TEXT NOT NULL
+      )`,
+    )
+    .run();
 
   await db
     .prepare(
@@ -689,9 +740,9 @@ async function insertProfile(db: D1DatabaseLike, user: Profile) {
     .prepare(
       `INSERT INTO profiles (
         id, phone, password, role, storeName, storeType, cityArea, mainProjects,
-        storeAdvantages, planName, memberStatus, expiresAt, dailyLimit, disabled,
+        storeAdvantages, sourceChannel, planName, memberStatus, expiresAt, dailyLimit, disabled,
         createdAt, updatedAt
-      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
     )
     .bind(
       user.id,
@@ -703,6 +754,7 @@ async function insertProfile(db: D1DatabaseLike, user: Profile) {
       user.cityArea,
       user.mainProjects,
       user.storeAdvantages,
+      user.sourceChannel,
       user.planName,
       user.memberStatus,
       user.expiresAt,
@@ -756,6 +808,16 @@ function mapProfile(row: ProfileRow): Profile {
   return {
     ...row,
     disabled: Boolean(row.disabled),
+    sourceChannel: normalizeSourceChannel(row.sourceChannel),
+    storeType: normalizeStoreType(row.storeType),
+  };
+}
+
+function mapApplication(row: ApplicationRow): OpeningApplication {
+  return {
+    ...row,
+    sourceChannel: normalizeSourceChannel(row.sourceChannel),
+    storeType: normalizeStoreType(row.storeType),
   };
 }
 
@@ -794,4 +856,10 @@ function mapWorkbenchGeneration(row: WorkbenchGenerationRow): WorkbenchGeneratio
 
 function makeId(prefix: string): string {
   return `${prefix}_${crypto.randomUUID().replace(/-/g, "").slice(0, 12)}`;
+}
+
+function addDays(value: string, days: number): string {
+  const date = new Date(`${value.slice(0, 10)}T00:00:00.000Z`);
+  date.setUTCDate(date.getUTCDate() + days);
+  return date.toISOString().slice(0, 10);
 }

@@ -8,6 +8,7 @@ import {
   type StoreProfileActionState,
 } from "@/app/actions";
 import type { Profile, StoreProfileRecord } from "@/lib/data/types";
+import { formatChinaDateTime } from "@/lib/date-format";
 import { getVisibleActionStates } from "./textProfileState";
 
 const initialState: StoreProfileActionState = {
@@ -62,7 +63,7 @@ export function AdminStoreProfilePanel({ customer, record }: { customer: Profile
       <section className="rounded-lg border border-ink/10 bg-white p-5 shadow-sm">
         <div className="grid gap-3 sm:grid-cols-3">
           <Info label="原始资料" value={record?.extractedText ? "已填写" : "未填写"} />
-          <Info label="更新时间" value={record ? new Date(record.updatedAt).toLocaleString("zh-CN") : "暂无"} />
+          <Info label="更新时间" value={record ? formatChinaDateTime(record.updatedAt) : "暂无"} />
           <Info label="填写方" value={record ? (record.uploadBy === "admin" ? "管理员" : "客户") : "暂无"} />
         </div>
 

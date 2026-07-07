@@ -8,6 +8,7 @@ import {
   type DeleteActionState,
 } from "@/app/actions";
 import type { GenerationRecord } from "@/lib/data/types";
+import { formatChinaDateTime } from "@/lib/date-format";
 import { sceneDefinitions } from "@/lib/domain/scenes";
 import { normalizeGenerationStatus } from "@/lib/ai/generation-record";
 
@@ -59,7 +60,7 @@ export function GenerationManagement({ generations }: { generations: GenerationR
             <article className="rounded-lg border border-ink/10 bg-white p-5 shadow-sm" key={record.id}>
               <div className="flex flex-col gap-1 sm:flex-row sm:items-center sm:justify-between">
                 <p className="font-semibold text-ink">{record.storeName}</p>
-                <p className="text-xs text-ink/50">{new Date(record.createdAt).toLocaleString("zh-CN")}</p>
+                <p className="text-xs text-ink/50">{formatChinaDateTime(record.createdAt)}</p>
               </div>
               <p className="mt-2 text-sm leading-6 text-ink/62">
                 {record.phone} / {sceneDefinitions[record.generationType].label} / {record.projectName} / 店铺资料：

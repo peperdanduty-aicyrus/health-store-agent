@@ -2,6 +2,7 @@ import { getPlanConfig, type MemberStatus, type PlanName } from "./plans";
 import type { SceneKey } from "./scenes";
 
 export type PermissionProfile = {
+  dailyLimit?: number;
   disabled: boolean;
   expiresAt: string;
   memberStatus: MemberStatus;
@@ -35,25 +36,26 @@ export function canViewHistory(profile: PermissionProfile): boolean {
 
 export function canGenerate({ profile, scene, todayCount, today }: CanGenerateInput): GeneratePermission {
   const plan = getPlanConfig(profile.planName);
-  const remainingToday = Math.max(plan.dailyLimit - todayCount, 0);
+  const dailyLimit = profile.dailyLimit && profile.dailyLimit > 0 ? profile.dailyLimit : plan.dailyLimit;
+  const remainingToday = Math.max(dailyLimit - todayCount, 0);
 
   if (profile.disabled || profile.memberStatus === "disabled") {
-    return { allowed: false, dailyLimit: plan.dailyLimit, reason: "disabled", remainingToday };
+    return { allowed: false, dailyLimit, reason: "disabled", remainingToday };
   }
 
   if (profile.memberStatus === "expired" || isExpired(profile.expiresAt, today)) {
-    return { allowed: false, dailyLimit: plan.dailyLimit, reason: "expired", remainingToday };
+    return { allowed: false, dailyLimit, reason: "expired", remainingToday };
   }
 
-  if (todayCount >= plan.dailyLimit) {
-    return { allowed: false, dailyLimit: plan.dailyLimit, reason: "daily_limit_reached", remainingToday: 0 };
+  if (todayCount >= dailyLimit) {
+    return { allowed: false, dailyLimit, reason: "daily_limit_reached", remainingToday: 0 };
   }
 
   if (!plan.allowedScenes.includes(scene)) {
-    return { allowed: false, dailyLimit: plan.dailyLimit, reason: "plan_locked", remainingToday };
+    return { allowed: false, dailyLimit, reason: "plan_locked", remainingToday };
   }
 
-  return { allowed: true, dailyLimit: plan.dailyLimit, reason: "allowed", remainingToday };
+  return { allowed: true, dailyLimit, reason: "allowed", remainingToday };
 }
 
 function isExpired(expiresAt: string, today: string): boolean {

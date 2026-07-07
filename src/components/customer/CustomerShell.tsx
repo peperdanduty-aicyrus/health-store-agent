@@ -20,7 +20,7 @@ export function CustomerShell({ children, profile }: { children: ReactNode; prof
         <div className="mx-auto flex max-w-6xl flex-col gap-3 px-5 py-4 sm:flex-row sm:items-center sm:justify-between sm:px-8">
           <div>
             <p className="text-sm text-ink/58">{storeName}</p>
-            <h1 className="text-xl font-semibold text-ink">本地健康门店获客助手</h1>
+            <h1 className="text-xl font-semibold text-ink">本地门店 AI 获客文案助手</h1>
           </div>
           <nav className="flex flex-wrap gap-2">
             {navItems.map((item) => (

@@ -22,7 +22,7 @@ export function SceneCardGrid({ profile, todayCount }: { profile: Profile; today
               <div>
                 <p className="text-lg font-semibold text-ink">{meta.label}</p>
                 <p className="mt-2 text-sm leading-6 text-ink/60">
-                  {permission.allowed ? "可生成，生成后自动提示敏感词风险。" : "当前状态暂不可直接生成。"}
+                  {permission.allowed ? meta.description : "当前状态暂不可直接生成。"}
                 </p>
               </div>
               {permission.allowed ? <Sparkles className="h-5 w-5 text-coral" /> : <LockKeyhole className="h-5 w-5 text-ink/35" />}
@@ -33,4 +33,3 @@ export function SceneCardGrid({ profile, todayCount }: { profile: Profile; today
     </div>
   );
 }
-

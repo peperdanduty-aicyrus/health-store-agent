@@ -2,32 +2,23 @@
 
 import { useActionState } from "react";
 import { submitOpeningApplication, type OpeningApplicationFormState } from "@/app/actions";
+import { canonicalStoreTypes } from "@/lib/domain/store-types";
 
 const initialState: OpeningApplicationFormState = {
   message: "",
   success: false,
 };
 
-const storeTypes = [
-  "中医馆 / 中医诊所",
-  "推拿馆 / 理疗馆 / 艾灸馆 / SPA 馆",
-  "口腔门诊",
-  "医院科室 / 综合门诊",
-  "健康管理中心 / 体检中心",
-  "宠物医院",
-  "其他本地健康门店",
-];
-
 export function OpeningApplicationForm() {
   const [state, action, pending] = useActionState(submitOpeningApplication, initialState);
 
   return (
     <form action={action} className="rounded-lg border border-ink/10 bg-white p-5 shadow-sm">
-      <p className="text-sm font-semibold text-coral">免费试用</p>
-      <h2 className="mt-2 text-2xl font-semibold text-ink">免费申请试用账号</h2>
-      <p className="mt-2 text-sm leading-6 text-ink/62">只需留下 3 项信息，人工确认后发放免费试用账号，不自动扣费。</p>
+      <p className="text-sm font-semibold text-coral">免费体验7天</p>
+      <h2 className="mt-2 text-2xl font-semibold text-ink">免费申请7天体验账号</h2>
+      <p className="mt-2 text-sm leading-6 text-ink/62">只需要留下3项信息，人工确认后发放7天体验账号，不自动扣费。</p>
       <div className="mt-5 grid gap-3 sm:grid-cols-2">
-        <Field label="门店名称" name="storeName" placeholder="例如：某某中医馆 / 某某口腔 / 某某推拿馆" required />
+        <Field label="门店名称" name="storeName" placeholder="例如：某某餐厅 / 某某口腔 / 某某少儿美术" required />
         <label className="text-sm font-medium text-ink/75">
           门店类型
           <select
@@ -36,7 +27,7 @@ export function OpeningApplicationForm() {
             required
           >
             <option value="">请选择</option>
-            {storeTypes.map((type) => (
+            {canonicalStoreTypes.map((type) => (
               <option key={type} value={type}>
                 {type}
               </option>
@@ -58,9 +49,9 @@ export function OpeningApplicationForm() {
         disabled={pending}
         type="submit"
       >
-        {pending ? "提交中" : "提交免费试用申请"}
+        {pending ? "提交中" : "提交7天体验申请"}
       </button>
-      <p className="mt-3 text-xs leading-5 text-ink/58">提交后请添加微信，人工确认后发放免费试用账号，不自动扣费。</p>
+      <p className="mt-3 text-xs leading-5 text-ink/58">提交后请添加微信或等待人工确认，确认后发放7天体验账号。</p>
       {state.message ? (
         <p className={`mt-4 rounded-md p-3 text-sm ${state.success ? "bg-moss/10 text-moss" : "bg-coral/10 text-coral"}`}>
           {state.message}

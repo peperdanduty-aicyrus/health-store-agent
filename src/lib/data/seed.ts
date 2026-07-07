@@ -15,6 +15,7 @@ export const seedProfiles: Profile[] = [
     cityArea: "北京",
     mainProjects: "",
     storeAdvantages: "",
+    sourceChannel: "其他",
     planName: "coaching",
     memberStatus: "paid",
     expiresAt: "2027-06-10",

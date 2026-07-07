@@ -2,6 +2,7 @@
 
 import { useActionState } from "react";
 import {
+  extendCustomerForGoodReview,
   resetCustomerPassword,
   toggleCustomerDisabled,
   type CreateMerchantFormState,
@@ -22,9 +23,10 @@ const passwordInitialState: PasswordFormState = {
 export function CustomerAccountActions({ user }: { user: Profile }) {
   const [toggleState, toggleAction, togglePending] = useActionState(toggleCustomerDisabled, toggleInitialState);
   const [passwordState, passwordAction, passwordPending] = useActionState(resetCustomerPassword, passwordInitialState);
+  const [extensionState, extensionAction, extensionPending] = useActionState(extendCustomerForGoodReview, toggleInitialState);
 
   return (
-    <div className="grid gap-4 lg:grid-cols-2">
+    <div className="grid gap-4 lg:grid-cols-3">
       <form action={toggleAction} className="rounded-lg border border-ink/10 bg-white p-5 shadow-sm">
         <input name="userId" type="hidden" value={user.id} />
         <input name="disabled" type="hidden" value={user.disabled ? "false" : "true"} />
@@ -42,6 +44,24 @@ export function CustomerAccountActions({ user }: { user: Profile }) {
         {toggleState.message ? (
           <p className={`mt-4 rounded-md p-3 text-sm ${toggleState.success ? "bg-moss/10 text-moss" : "bg-coral/10 text-coral"}`}>
             {toggleState.message}
+          </p>
+        ) : null}
+      </form>
+
+      <form action={extensionAction} className="rounded-lg border border-ink/10 bg-white p-5 shadow-sm">
+        <input name="userId" type="hidden" value={user.id} />
+        <p className="text-sm font-semibold text-coral">好评延期</p>
+        <p className="mt-2 text-sm leading-6 text-ink/62">确认客户好评后，在当前到期时间基础上增加30天，并保存操作记录。</p>
+        <button
+          className="mt-5 inline-flex min-h-11 items-center justify-center rounded-md bg-moss px-5 py-2 font-medium text-white disabled:opacity-60"
+          disabled={extensionPending}
+          type="submit"
+        >
+          {extensionPending ? "延期中" : "好评延长1个月"}
+        </button>
+        {extensionState.message ? (
+          <p className={`mt-4 rounded-md p-3 text-sm ${extensionState.success ? "bg-moss/10 text-moss" : "bg-coral/10 text-coral"}`}>
+            {extensionState.message}
           </p>
         ) : null}
       </form>

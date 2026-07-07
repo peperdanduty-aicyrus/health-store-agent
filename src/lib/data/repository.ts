@@ -2,6 +2,7 @@ import { mockStore } from "./store";
 import { createD1Store, type D1DatabaseLike } from "./store-d1";
 import { assertAgentMode } from "../app-mode";
 import type {
+  AccountOperationLog,
   CreateGenerationInput,
   CreateOpeningApplicationInput,
   CreateUserInput,
@@ -37,6 +38,7 @@ export type DataStore = {
   getWorkbenchAccountById(id: string): Promise<WorkbenchAccount | null> | WorkbenchAccount | null;
   getWorkbenchGenerationById(id: string): Promise<WorkbenchGenerationRecord | null> | WorkbenchGenerationRecord | null;
   listApplications(): Promise<OpeningApplication[]> | OpeningApplication[];
+  listAccountOperationLogs(userId?: string): Promise<AccountOperationLog[]> | AccountOperationLog[];
   listGenerations(filter?: GenerationFilter): Promise<GenerationRecord[]> | GenerationRecord[];
   listStoreProfiles(): Promise<StoreProfileRecord[]> | StoreProfileRecord[];
   listUsers(): Promise<Profile[]> | Profile[];
@@ -55,6 +57,7 @@ export type DataStore = {
   ): Promise<OpeningApplication | null> | OpeningApplication | null;
   updateUserDisabled(id: string, disabled: boolean): Promise<Profile | null> | Profile | null;
   updateUserPassword(id: string, password: string): Promise<Profile | null> | Profile | null;
+  extendUserExpiryByDays(id: string, days: number, note: string): Promise<Profile | null> | Profile | null;
   updateWorkbenchAccountDisabled(id: string, disabled: boolean): Promise<WorkbenchAccount | null> | WorkbenchAccount | null;
   updateWorkbenchAccountPassword(id: string, password: string): Promise<WorkbenchAccount | null> | WorkbenchAccount | null;
 };
