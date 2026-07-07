@@ -15,7 +15,7 @@
     {
       "binding": "DB",
       "database_name": "health-agent-db",
-      "database_id": "PENDING_CREATE"
+      "database_id": "5d855594-165b-4b83-b986-fe95eb509251"
     }
   ],
   "vars": {
@@ -26,4 +26,3 @@
     "AI_BASE_URL": "https://api.deepseek.com"
   }
 }
-
