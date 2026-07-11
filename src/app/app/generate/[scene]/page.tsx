@@ -5,9 +5,10 @@ import { CustomerShell } from "@/components/customer/CustomerShell";
 import { requireUser } from "@/lib/auth/session";
 import { sceneDefinitions, type SceneKey } from "@/lib/domain/scenes";
 
-export default async function GenerateScenePage({ params }: { params: Promise<{ scene: string }> }) {
+export default async function GenerateScenePage({ params, searchParams }: { params: Promise<{ scene: string }>; searchParams: Promise<{ organizationId?: string }> }) {
   const profile = await requireUser();
   const { scene } = await params;
+  const organizationId = (await searchParams).organizationId || "";
 
   if (!Object.keys(sceneDefinitions).includes(scene)) {
     notFound();
@@ -23,10 +24,10 @@ export default async function GenerateScenePage({ params }: { params: Promise<{ 
       <section className="mt-5">
         <p className="text-sm font-semibold text-coral">内容生成</p>
         <h2 className="mt-1 text-2xl font-semibold text-ink">{sceneDefinitions[sceneKey].label}</h2>
-        <p className="mt-2 text-sm leading-6 text-ink/62">门店资料会自动带入，客户只需要填写本次活动或项目信息。</p>
+        <p className="mt-2 text-sm leading-6 text-ink/62">{profile.storeType === "运营人员" ? "仅可为已分配机构生成内容，机构资料会在服务端校验后带入。" : "门店资料会自动带入，客户只需要填写本次活动或项目信息。"}</p>
       </section>
       <div className="mt-5">
-        <GenerationForm scene={sceneKey} storeType={profile.storeType} />
+        <GenerationForm scene={sceneKey} storeType={profile.storeType} organizationId={profile.storeType === "运营人员" ? organizationId : undefined} />
       </div>
     </CustomerShell>
   );

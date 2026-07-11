@@ -4,7 +4,7 @@ import type { ReactNode } from "react";
 import { logout } from "@/app/actions";
 import type { Profile } from "@/lib/data/types";
 
-const navItems = [
+const customerNavItems = [
   { href: "/app", label: "功能" },
   { href: "/app/store-profile", label: "店铺资料" },
   { href: "/app/history", label: "历史" },
@@ -13,6 +13,11 @@ const navItems = [
 
 export function CustomerShell({ children, profile }: { children: ReactNode; profile: Profile }) {
   const storeName = profile.storeName.trim() === "测试" ? "体验门店" : profile.storeName;
+  const isOperator = profile.storeType === "运营人员";
+  const navItems = isOperator ? [
+    { href: "/app", label: "工作台" },
+    { href: "/app/history", label: "历史" },
+  ] : customerNavItems;
 
   return (
     <main className="min-h-screen bg-paper">
@@ -20,7 +25,7 @@ export function CustomerShell({ children, profile }: { children: ReactNode; prof
         <div className="mx-auto flex max-w-6xl flex-col gap-3 px-5 py-4 sm:flex-row sm:items-center sm:justify-between sm:px-8">
           <div>
             <p className="text-sm text-ink/58">{storeName}</p>
-            <h1 className="text-xl font-semibold text-ink">本地门店 AI 获客文案助手</h1>
+            <h1 className="text-xl font-semibold text-ink">{isOperator ? "运营内容工作台" : "本地门店 AI 获客文案助手"}</h1>
           </div>
           <nav className="flex flex-wrap gap-2">
             {navItems.map((item) => (

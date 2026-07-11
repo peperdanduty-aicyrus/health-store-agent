@@ -8,15 +8,19 @@ import {
   CircleDollarSign,
   ClipboardList,
   ContactRound,
+  Eye,
+  EyeOff,
   LayoutDashboard,
   LogOut,
   Menu,
   Settings,
   UsersRound,
 } from "lucide-react";
-import type { ReactNode } from "react";
+import { useState, type ReactNode } from "react";
 import { logoutWorkbench } from "@/app/lvminglei/actions";
 import type { WorkbenchAccount } from "@/lib/data/types";
+import type { OpsDashboardMetrics } from "@/lib/ops/types";
+import { money } from "./OpsUi";
 
 const mainNav = [
   { href: "/lvminglei", label: "总览", icon: LayoutDashboard },
@@ -35,8 +39,17 @@ const utilityNav = [
 
 const mobileNav = [mainNav[0], mainNav[1], mainNav[3], mainNav[4], { href: "/lvminglei/organizations", label: "更多", icon: Menu }];
 
-export function OpsShell({ account, children }: { account: WorkbenchAccount; children: ReactNode }) {
+export function OpsShell({
+  account,
+  children,
+  overview,
+}: {
+  account: WorkbenchAccount;
+  children: ReactNode;
+  overview: Pick<OpsDashboardMetrics, "activeClients" | "expectedThisMonth" | "receivedThisMonth" | "overdueAmount">;
+}) {
   const pathname = usePathname();
+  const [showAmounts, setShowAmounts] = useState(false);
   return (
     <div className="ops-app-shell">
       <aside className="ops-sidebar">
@@ -47,6 +60,13 @@ export function OpsShell({ account, children }: { account: WorkbenchAccount; chi
         <nav className="ops-sidebar-nav" aria-label="运营总控台导航">
           {mainNav.map((item) => <NavItem currentPath={pathname} item={item} key={item.href} />)}
         </nav>
+        <section className="ops-side-overview" aria-label="经营概览">
+          <div className="ops-side-overview-heading"><span>经营概览</span><button aria-label={showAmounts ? "隐藏金额" : "显示金额"} onClick={() => setShowAmounts((value) => !value)} type="button">{showAmounts ? <EyeOff size={15} /> : <Eye size={15} />}</button></div>
+          <OverviewRow label="当前合作客户数" value={String(overview.activeClients)} />
+          <OverviewRow label="本月应收" value={money(overview.expectedThisMonth)} masked={!showAmounts} />
+          <OverviewRow label="本月已收" value={money(overview.receivedThisMonth)} masked={!showAmounts} />
+          <OverviewRow label="逾期金额" value={money(overview.overdueAmount)} masked={!showAmounts} />
+        </section>
         <nav className="ops-sidebar-nav ops-sidebar-utility" aria-label="系统入口">
           {utilityNav.map((item) => <NavItem currentPath={pathname} item={item} key={item.href} />)}
         </nav>
@@ -84,6 +104,10 @@ export function OpsShell({ account, children }: { account: WorkbenchAccount; chi
       </nav>
     </div>
   );
+}
+
+function OverviewRow({ label, value, masked = false }: { label: string; value: string; masked?: boolean }) {
+  return <div className="ops-side-overview-row"><span>{label}</span><strong>{masked ? "¥••••" : value}</strong></div>;
 }
 
 function NavItem({ currentPath, item }: { currentPath: string; item: (typeof mainNav)[number] }) {

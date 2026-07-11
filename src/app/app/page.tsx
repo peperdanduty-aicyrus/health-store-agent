@@ -1,50 +1,55 @@
+import Link from "next/link";
 import { logout } from "@/app/actions";
-import { addAssignedTaskLog, saveAssignedContentProfile, updateAssignedTask } from "./ops-actions";
-import { EmptyState, Field, Panel, StatusBadge } from "@/components/ops/OpsUi";
+import { EmptyState, Panel } from "@/components/ops/OpsUi";
 import { requireUser } from "@/lib/auth/session";
-import { chinaDate } from "@/lib/ops/date";
+import { formatChinaDateTime } from "@/lib/date-format";
+import { getDataStore } from "@/lib/data/repository";
+import { sceneDefinitions, type SceneKey } from "@/lib/domain/scenes";
 import { getOpsStore } from "@/lib/ops/repository";
-import { opsTaskStatuses } from "@/lib/ops/types";
 
-export default async function OperatorAppPage() {
+const contentTypes: Array<{ label: string; scene: SceneKey; description: string }> = [
+  { label: "公众号文章", scene: "official_account", description: "项目介绍、活动通知与门店动态。" },
+  { label: "朋友圈内容", scene: "moments", description: "适合日常发布的短文案与配图建议。" },
+  { label: "小红书内容", scene: "xiaohongshu", description: "标题、正文与评论区引导。" },
+  { label: "短视频文案", scene: "douyin_kuaishou", description: "标题、口播、字幕与评论引导。" },
+  { label: "AI 搜索文章", scene: "official_account", description: "基于真实机构资料整理可检索文章。" },
+];
+
+export default async function OperatorAppPage({ searchParams }: { searchParams: Promise<{ organizationId?: string }> }) {
   const profile = await requireUser();
-  const store = await getOpsStore();
-  const [assignments, allOrganizations, allClients, allTasks] = await Promise.all([
-    store.listAssignments(profile.id), store.listOrganizations(), store.listClients(), store.listTasks(),
+  const requestedOrganizationId = (await searchParams).organizationId || "";
+  const [opsStore, dataStore] = await Promise.all([getOpsStore(), getDataStore()]);
+  const [assignments, organizations, generations] = await Promise.all([
+    opsStore.listAssignments(profile.id),
+    opsStore.listOrganizations(),
+    dataStore.listGenerations({ userId: profile.id }),
   ]);
-  const allowedOrgIds = new Set(assignments.map((item) => item.organizationId));
-  const organizations = allOrganizations.filter((item) => allowedOrgIds.has(item.id) && item.active);
-  const clientIds = new Set(organizations.map((item) => item.clientId));
-  const clientNames = new Map(allClients.filter((item) => clientIds.has(item.id)).map((item) => [item.id, item.clientName]));
-  const tasks = allTasks.filter((task) => allowedOrgIds.has(task.organizationId));
-  const profiles = await Promise.all(organizations.map((organization) => store.getContentProfile(organization.id)));
-  const profilesByOrg = new Map(profiles.filter(Boolean).map((item) => [item!.organizationId, item!]));
-  const today = chinaDate();
+  const allowedOrganizationIds = new Set(assignments.map((item) => item.organizationId));
+  const assignedOrganizations = organizations.filter((item) => item.active && allowedOrganizationIds.has(item.id));
+  const selectedOrganization = assignedOrganizations.find((item) => item.id === requestedOrganizationId) || assignedOrganizations[0];
+  const latestGenerations = generations.slice(0, 4);
 
   return (
     <main className="operator-shell">
-      <header className="operator-topbar"><div><p>门店线上运营与 AI 搜索优化</p><h1>运营人员工作台</h1></div><div><span>{profile.storeName || profile.phone}</span><form action={logout}><button className="ops-button ops-button-secondary" type="submit">退出登录</button></form></div></header>
-      <div className="operator-content">
-        <section className="operator-welcome"><div><p>{today}</p><h2>今天的机构与任务</h2><span>你只能看到管理员分配给自己的机构。合同、费用、收款和系统配置不会在此页面返回。</span></div><strong>{tasks.filter((task) => ["待生成", "待处理"].includes(task.status)).length}<small>待处理任务</small></strong></section>
-        {organizations.length === 0 ? <EmptyState title="暂未分配机构" description="请联系管理员在系统管理中为当前账号分配机构。" /> : (
-          <div className="operator-orgs">{organizations.map((organization) => {
-            const orgTasks = tasks.filter((task) => task.organizationId === organization.id);
-            const contentProfile = profilesByOrg.get(organization.id);
-            return (
-              <section className="operator-org" key={organization.id}>
-                <div className="operator-org-title"><div><p>{clientNames.get(organization.clientId)}</p><h2>{organization.organizationName}</h2><span>{organization.description || "暂无机构说明"}</span></div><strong>{orgTasks.length}<small>项任务</small></strong></div>
-                <div className="ops-two-column balanced">
-                  <Panel title="机构任务">
-                    {orgTasks.length ? <div className="ops-list">{orgTasks.map((task) => <form action={updateAssignedTask} className="operator-task" key={task.id}><input name="taskId" type="hidden" value={task.id} /><div><strong>{task.title}</strong><small>{task.scheduledDate || task.dueDate || "未安排日期"} · {task.relatedPlatform || "未指定平台"}</small><p>{task.description}</p></div><StatusBadge status={task.status} /><select name="status" defaultValue={task.status}>{opsTaskStatuses.map((status) => <option key={status}>{status}</option>)}</select><button className="ops-button ops-button-primary small" type="submit">更新状态</button></form>)}</div> : <EmptyState compact title="暂无机构任务" description="管理员新增任务后会显示在这里" />}
-                    <form action={addAssignedTaskLog} className="ops-form-grid compact operator-log-form"><input name="clientId" type="hidden" value={organization.clientId} /><input name="organizationId" type="hidden" value={organization.id} /><Field label="记录类型"><select name="logType"><option>工作记录</option><option>客户反馈</option><option>临时任务</option><option>沟通记录</option></select></Field><Field label="记录内容"><input name="content" required /></Field><Field wide label="下一步"><input name="nextAction" /></Field><div className="ops-form-actions wide"><button className="ops-button ops-button-secondary" type="submit">添加工作记录</button></div></form>
-                  </Panel>
-                  <Panel title="机构内容资料">
-                    <form action={saveAssignedContentProfile} className="ops-form-grid compact"><input name="organizationId" type="hidden" value={organization.id} /><Field wide label="详细介绍"><textarea name="detailedIntro" rows={3} defaultValue={contentProfile?.detailedIntro} /></Field><Field wide label="服务项目"><textarea name="services" rows={3} defaultValue={contentProfile?.services} /></Field><Field wide label="真实优势"><textarea name="realAdvantages" rows={3} defaultValue={contentProfile?.realAdvantages} /></Field><Field label="写作风格"><textarea name="writingStyle" rows={3} defaultValue={contentProfile?.writingStyle} /></Field><Field label="禁用词"><textarea name="bannedWords" rows={3} defaultValue={contentProfile?.bannedWords} /></Field><Field wide label="关键词"><textarea name="keywords" rows={3} defaultValue={contentProfile?.keywords} /></Field><div className="ops-form-actions wide"><button className="ops-button ops-button-primary" type="submit">保存机构资料</button></div></form>
-                  </Panel>
-                </div>
-              </section>
-            );
-          })}</div>
+      <header className="operator-topbar"><div><p>门店线上运营与 AI 搜索优化</p><h1>内容生成工作台</h1></div><div><span>{profile.storeName || profile.phone}</span><form action={logout}><button className="ops-button ops-button-secondary" type="submit">退出登录</button></form></div></header>
+      <div className="operator-content operator-workbench">
+        <section className="operator-welcome"><div><p>运营内容工作台</p><h2>为被分配机构准备内容</h2><span>机构范围由服务端校验；此处不提供合同、费用、收款或客户续费信息。</span></div></section>
+        {assignedOrganizations.length === 0 ? <EmptyState title="暂未分配机构" description="请联系管理员在系统管理中为当前账号分配机构。" /> : (
+          <>
+            <form className="operator-org-picker" action="/app" method="get"><span>当前被分配机构</span><select defaultValue={selectedOrganization?.id} name="organizationId">{assignedOrganizations.map((organization) => <option key={organization.id} value={organization.id}>{organization.organizationName}</option>)}</select><button className="ops-button ops-button-secondary" type="submit">切换机构</button></form>
+            <section className="operator-content-grid">
+              <Panel title={selectedOrganization ? `${selectedOrganization.organizationName} · 内容生成` : "内容生成"}>
+                <div className="operator-content-types">{contentTypes.map((item) => <Link className="operator-content-type" href={`/app/generate/${item.scene}?organizationId=${selectedOrganization?.id || ""}`} key={item.label}><strong>{item.label}</strong><span>{item.description}</span></Link>)}</div>
+              </Panel>
+              <div className="ops-stack">
+                <Panel title="最近生成" action={<Link className="ops-text-link" href="/app/history">全部历史</Link>}>
+                  {latestGenerations.length ? latestGenerations.map((record) => <div className="operator-generation-row" key={record.id}><strong>{record.projectName || sceneDefinitions[record.generationType].label}</strong><span>{sceneDefinitions[record.generationType].label} · {formatChinaDateTime(record.createdAt)}</span></div>) : <EmptyState compact title="暂无生成记录" description="从左侧内容类型开始生成" />}
+                </Panel>
+                <Panel title="草稿"><EmptyState compact title="暂无草稿" description="当前版本尚未启用草稿保存，已生成内容可在历史记录查看。" /></Panel>
+                <Panel title="历史记录"><Link className="ops-button ops-button-secondary" href="/app/history">查看生成历史</Link></Panel>
+              </div>
+            </section>
+          </>
         )}
       </div>
     </main>

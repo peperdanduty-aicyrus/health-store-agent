@@ -24,13 +24,14 @@ const purposes = [
   "私域成交",
 ];
 
-export function GenerationForm({ scene, storeType }: { scene: SceneKey; storeType: string }) {
+export function GenerationForm({ scene, storeType, organizationId }: { scene: SceneKey; storeType: string; organizationId?: string }) {
   const [state, action, pending] = useActionState(generateForScene, initialState);
   const placeholders = getStoreTypePlaceholders(storeType);
 
   return (
     <form action={action} className="rounded-lg border border-ink/10 bg-white p-5 shadow-sm">
       <input name="scene" type="hidden" value={scene} />
+      {organizationId ? <input name="organizationId" type="hidden" value={organizationId} /> : null}
       <div className="grid gap-3 sm:grid-cols-2">
         <Field label="项目名称" name="projectName" placeholder={placeholders.projectName} />
         <Field label="目标客户" name="targetCustomer" placeholder={placeholders.targetCustomer} />

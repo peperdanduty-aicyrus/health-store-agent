@@ -15,6 +15,8 @@ import type { SceneKey } from "@/lib/domain/scenes";
 import { normalizeSourceChannel, normalizeStoreType } from "@/lib/domain/store-types";
 import { replaceSensitiveWords } from "@/lib/safety/sensitive-words";
 import { chinaDate } from "@/lib/ops/date";
+import { assertOrganizationAccess } from "@/lib/ops/access";
+import { getOpsStore } from "@/lib/ops/repository";
 
 export type OpeningApplicationFormState = {
   message: string;
@@ -661,14 +663,35 @@ export async function generateForScene(
   }
 
   const storeProfileRecord = await store.getStoreProfileByUserId(profile.id);
-  const storeProfileSummary = storeProfileRecord?.profileSummary.trim() || "";
+  let storeProfileSummary = storeProfileRecord?.profileSummary.trim() || "";
+  let generationProfile = profile;
+
+  if (profile.storeType === "运营人员") {
+    const organizationId = String(formData.get("organizationId") || "").trim();
+    if (!organizationId) return { message: "请选择被分配机构后再生成。", success: false };
+    const opsStore = await getOpsStore();
+    assertOrganizationAccess(await opsStore.listAssignments(profile.id), profile.id, organizationId);
+    const organization = await opsStore.getOrganization(organizationId);
+    if (!organization || !organization.active) return { message: "当前机构不可用，请返回工作台重新选择。", success: false };
+    const contentProfile = await opsStore.getContentProfile(organizationId);
+    generationProfile = {
+      ...profile,
+      storeName: organization.organizationName,
+      storeType: organization.organizationType || profile.storeType,
+      mainProjects: contentProfile?.services || profile.mainProjects,
+      storeAdvantages: contentProfile?.realAdvantages || profile.storeAdvantages,
+    };
+    storeProfileSummary = [contentProfile?.detailedIntro, contentProfile?.services, contentProfile?.realAdvantages, contentProfile?.keywords]
+      .filter(Boolean)
+      .join("\n");
+  }
 
   try {
     const generated = await generateSafeSceneContent({
       input,
       scene,
       storeProfile: {
-        ...profile,
+        ...generationProfile,
         storeProfileSummary,
       },
       userId: profile.id,
@@ -689,8 +712,8 @@ export async function generateForScene(
       purpose: input.purpose,
       rawResponse: generated.rawResponse,
       requestId: generated.requestId,
-      storeName: profile.storeName,
-      storeType: profile.storeType,
+      storeName: generationProfile.storeName,
+      storeType: generationProfile.storeType,
       targetCustomer: input.targetCustomer,
       tokenUsage: generated.tokenUsage,
       usedStoreProfile: Boolean(storeProfileSummary),
