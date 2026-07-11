@@ -11,9 +11,10 @@ export function WorkbenchLoginForm() {
   const [state, action, pending] = useActionState(loginWorkbench, initialState);
 
   return (
-    <form action={action} className="rounded-lg border border-ink/10 bg-white p-5 shadow-sm">
-      <h1 className="text-2xl font-semibold text-ink">吕明磊副业运营工作台</h1>
-      <p className="mt-2 text-sm leading-6 text-ink/62">私用工具，不开放注册。请使用工作台账号登录。</p>
+    <form action={action} className="ops-login-card">
+      <p className="ops-login-label">门店线上运营与 AI 搜索优化</p>
+      <h1>运营总控台</h1>
+      <p>内部系统，不开放注册。请使用超级管理员账号登录。</p>
       <label className="mt-5 block text-sm font-medium text-ink/75">
         账号
         <input
@@ -34,11 +35,11 @@ export function WorkbenchLoginForm() {
         />
       </label>
       <button
-        className="mt-5 inline-flex min-h-12 w-full items-center justify-center rounded-md bg-ink px-5 py-3 font-medium text-white disabled:opacity-60"
+        className="ops-button ops-button-primary ops-login-submit"
         disabled={pending}
         type="submit"
       >
-        {pending ? "登录中" : "登录工作台"}
+        {pending ? "登录中" : "登录运营总控台"}
       </button>
       {state.message ? <p className="mt-4 rounded-md bg-coral/10 p-3 text-sm text-coral">{state.message}</p> : null}
     </form>

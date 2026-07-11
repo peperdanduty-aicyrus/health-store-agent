@@ -7,6 +7,7 @@ import type { Profile } from "@/lib/data/types";
 const navItems = [
   { href: "/agent-admin", label: "概览" },
   { href: "/agent-admin/users", label: "账号" },
+  { href: "/agent-admin/operators", label: "运营分配" },
   { href: "/agent-admin/applications", label: "线索" },
   { href: "/agent-admin/generations", label: "记录" },
   { href: "/agent-admin/store-profiles", label: "资料" },
@@ -20,7 +21,7 @@ export function AdminShell({ children, profile }: { children: ReactNode; profile
         <div className="mx-auto flex max-w-6xl flex-col gap-3 px-5 py-4 sm:flex-row sm:items-center sm:justify-between sm:px-8">
           <div>
             <p className="text-sm text-white/58">{profile.phone}</p>
-            <h1 className="text-xl font-semibold">Cyrus 管理后台</h1>
+            <h1 className="text-xl font-semibold">Agent 系统管理</h1>
           </div>
           <nav className="flex flex-wrap gap-2">
             {navItems.map((item) => (

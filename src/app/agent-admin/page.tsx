@@ -12,7 +12,7 @@ export default async function CyrusPage() {
       <main className="min-h-screen bg-paper px-5 py-8 sm:px-8">
         <div className="mx-auto max-w-md">
           <p className="mb-3 text-sm font-semibold text-coral">管理员后台</p>
-          <LoginForm />
+          <LoginForm audience="admin" />
         </div>
       </main>
     );

@@ -2,6 +2,7 @@ import Link from "next/link";
 import { AdminShell } from "@/components/admin/AdminShell";
 import { requireAdmin } from "@/lib/auth/session";
 import { getDataStore } from "@/lib/data/repository";
+import { formatChinaDateTime } from "@/lib/date-format";
 
 export default async function AdminStoreProfilesPage({
   searchParams,
@@ -72,7 +73,7 @@ export default async function AdminStoreProfilesPage({
                   <p className="text-ink/68">{customer.phone}</p>
                   <p className="text-ink/68">{customer.storeType}</p>
                   <p className={record ? "font-medium text-moss" : "font-medium text-ink/50"}>
-                    {record ? `已填写：${new Date(record.updatedAt).toLocaleDateString("zh-CN")}` : "未填写"}
+                    {record ? `已填写：${formatChinaDateTime(record.updatedAt).slice(0, 10)}` : "未填写"}
                   </p>
                   <Link className="rounded-md border border-ink/10 bg-paper px-3 py-2 text-center text-sm font-medium text-ink" href={`/agent-admin/store-profiles/${customer.id}`}>
                     管理

@@ -5,6 +5,7 @@ import { useMemo, useState } from "react";
 import { deleteWorkbenchGeneration } from "@/app/lvminglei/actions";
 import type { WorkbenchAccount, WorkbenchGenerationRecord, WorkbenchGenerationType } from "@/lib/data/types";
 import { workbenchToolDefinitions, workbenchToolTypes } from "@/lib/domain/workbench";
+import { formatChinaDateTime } from "@/lib/date-format";
 import { WorkbenchStructuredResult } from "./WorkbenchStructuredResult";
 
 export function WorkbenchHistoryList({
@@ -86,7 +87,7 @@ function HistoryMeta({ account, record }: { account: WorkbenchAccount; record: W
     ["发布平台", input.publishPlatform || input.targetPlatform],
     ["价格露出方式", input.priceExposure],
     ["补充信息", input.extraInfo],
-    ["生成时间", new Date(record.createdAt).toLocaleString("zh-CN")],
+    ["生成时间", formatChinaDateTime(record.createdAt)],
     ["使用模型", `${record.modelProvider}:${record.modelName}`],
     account.role === "owner" ? ["账号", record.accountDisplayName] : null,
   ].filter(Boolean) as string[][];

@@ -1,7 +1,7 @@
 export type AppMode = "agent" | "mixed" | "survey";
 export type AppEnv = "preview" | "production" | "test";
 
-const agentPrefixes = ["/", "/login", "/demo", "/app", "/agent-admin", "/lvminglei", "/lvminglei-test", "/tutorial"];
+const agentPrefixes = ["/", "/login", "/demo", "/app", "/agent-admin", "/lvminglei", "/lvminglei-test", "/tutorial", "/cyrus"];
 const surveyPrefixes = ["/", "/survey", "/yingyun", "/api/survey"];
 
 export function getAppMode(value = process.env.APP_MODE): AppMode {
@@ -22,8 +22,8 @@ export function getAppMetadata(mode = getAppMode()) {
     };
   }
   return {
-    description: "适合九类本地门店免费体验 7 天的 AI 文案工具，覆盖图文、团单、评价、私域和短视频内容。",
-    title: "本地门店 AI 获客文案助手",
+    description: "门店线上运营、内容管理与 AI 搜索优化服务。",
+    title: "门店线上运营与AI搜索优化",
   };
 }
 
@@ -44,11 +44,16 @@ export function canAccessPath(pathname: string, mode = getAppMode()) {
   if (mode === "mixed") return true;
   if (mode === "agent") {
     if (isSurveyPath(normalized)) return false;
+    if (normalized.startsWith("/cyrus/")) return false;
     return isAllowedByPrefixes(normalized, agentPrefixes);
   }
   if (isAgentPath(normalized)) return false;
   if (normalized === "/cyrus") return true;
   return isAllowedByPrefixes(normalized, surveyPrefixes);
+}
+
+export function getAgentRedirectPath(pathname: string, mode = getAppMode()) {
+  return mode === "agent" && normalizePath(pathname) === "/cyrus" ? "/lvminglei" : null;
 }
 
 function isSurveyPath(pathname: string) {

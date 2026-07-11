@@ -1,9 +1,14 @@
 import { NextResponse, type NextRequest } from "next/server";
-import { canAccessPath, getAppMode } from "@/lib/app-mode";
+import { canAccessPath, getAgentRedirectPath, getAppMode } from "@/lib/app-mode";
 
 export function middleware(request: NextRequest) {
   const { pathname } = request.nextUrl;
   const mode = getAppMode();
+
+  const redirectPath = getAgentRedirectPath(pathname, mode);
+  if (redirectPath) {
+    return NextResponse.redirect(new URL(redirectPath, request.url), 307);
+  }
 
   if (!canAccessPath(pathname, mode)) {
     return new NextResponse("Not Found", { status: 404 });

@@ -14,6 +14,7 @@ import { canGenerate } from "@/lib/domain/permissions";
 import type { SceneKey } from "@/lib/domain/scenes";
 import { normalizeSourceChannel, normalizeStoreType } from "@/lib/domain/store-types";
 import { replaceSensitiveWords } from "@/lib/safety/sensitive-words";
+import { chinaDate } from "@/lib/ops/date";
 
 export type OpeningApplicationFormState = {
   message: string;
@@ -636,7 +637,7 @@ export async function generateForScene(
   }
 
   const scene = String(formData.get("scene") || "") as SceneKey;
-  const today = new Date().toISOString().slice(0, 10);
+  const today = chinaDate();
   const todayCount = (await store.listGenerations({ userId: profile.id }))
     .filter((record) => record.createdAt.slice(0, 10) === today && isBillableGeneration(record)).length;
   const permission = canGenerate({ profile, scene, today, todayCount });

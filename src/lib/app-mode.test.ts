@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { canAccessPath, getAppMetadata, getAppMode } from "./app-mode";
+import { canAccessPath, getAgentRedirectPath, getAppMetadata, getAppMode } from "./app-mode";
 
 describe("app mode isolation", () => {
   it("parses known modes and defaults local development to mixed", () => {
@@ -13,7 +13,7 @@ describe("app mode isolation", () => {
     expect(canAccessPath("/survey/submit", "agent")).toBe(false);
     expect(canAccessPath("/yingyun/pos", "agent")).toBe(false);
     expect(canAccessPath("/api/survey/store-template", "agent")).toBe(false);
-    expect(canAccessPath("/cyrus", "agent")).toBe(false);
+    expect(canAccessPath("/cyrus", "agent")).toBe(true);
     expect(canAccessPath("/cyrus/users", "agent")).toBe(false);
     expect(canAccessPath("/demo", "agent")).toBe(true);
     expect(canAccessPath("/agent-admin/users", "agent")).toBe(true);
@@ -29,13 +29,15 @@ describe("app mode isolation", () => {
     expect(canAccessPath("/cyrus", "survey")).toBe(true);
   });
 
-  it("keeps cyrus available only to the survey worker", () => {
+  it("keeps survey cyrus intact while allowing the agent middleware redirect entry", () => {
     expect(canAccessPath("/cyrus/users", "survey")).toBe(false);
     expect(canAccessPath("/cyrus", "survey")).toBe(true);
+    expect(getAgentRedirectPath("/cyrus", "agent")).toBe("/lvminglei");
+    expect(getAgentRedirectPath("/cyrus", "survey")).toBeNull();
   });
 
   it("returns system-specific metadata", () => {
-    expect(getAppMetadata("agent").title).toBe("本地门店 AI 获客文案助手");
+    expect(getAppMetadata("agent").title).toBe("门店线上运营与AI搜索优化");
     expect(getAppMetadata("survey").title).toBe("商场经营调研系统");
   });
 });

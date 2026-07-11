@@ -3,9 +3,10 @@ import { LockKeyhole, Sparkles } from "lucide-react";
 import { canGenerate } from "@/lib/domain/permissions";
 import { sceneDefinitions } from "@/lib/domain/scenes";
 import type { Profile } from "@/lib/data/types";
+import { chinaDate } from "@/lib/ops/date";
 
 export function SceneCardGrid({ profile, todayCount }: { profile: Profile; todayCount: number }) {
-  const today = new Date().toISOString().slice(0, 10);
+  const today = chinaDate();
 
   return (
     <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">

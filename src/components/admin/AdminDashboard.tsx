@@ -1,8 +1,9 @@
 import type { GenerationRecord, Profile } from "@/lib/data/types";
 import { isBillableGeneration } from "@/lib/ai/generation-record";
+import { chinaDate } from "@/lib/ops/date";
 
 export function AdminDashboard({ generations, users }: { generations: GenerationRecord[]; users: Profile[] }) {
-  const today = new Date().toISOString().slice(0, 10);
+  const today = chinaDate();
   const todayGenerations = generations.filter(
     (record) => record.createdAt.slice(0, 10) === today && isBillableGeneration(record),
   );
