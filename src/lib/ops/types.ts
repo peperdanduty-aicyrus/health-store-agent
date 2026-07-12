@@ -172,6 +172,116 @@ export type OpsOperatorAssignmentInput = Omit<OpsOperatorAssignment, "id" | "cre
 export type OpsContentProfileInput = Omit<OpsContentProfile, "id" | "createdAt" | "updatedAt"> & { id?: string };
 export type OpsReportInput = Omit<OpsReport, "id" | "createdAt" | "updatedAt"> & { id?: string };
 
+// Phase 2A deliberately keeps content production separate from the legacy task
+// model.  Content task statuses include an in-flight state so a second click can
+// never be mistaken for another generation request.
+export const opsContentTypes = ["official_article", "xiaohongshu", "moments", "short_video", "ai_search_article"] as const;
+export type OpsContentType = (typeof opsContentTypes)[number];
+export const opsContentTaskStatuses = ["待生成", "生成中", "待处理", "已完成", "已交付", "已发布", "已作废"] as const;
+export type OpsContentTaskStatus = (typeof opsContentTaskStatuses)[number];
+export const opsContentDraftStatuses = ["草稿", "待审核", "已完成", "已交付", "已发布", "已作废"] as const;
+export type OpsContentDraftStatus = (typeof opsContentDraftStatuses)[number];
+
+export type OpsContentTask = {
+  id: string;
+  clientId: string;
+  organizationId: string;
+  contentType: OpsContentType;
+  titleDirection: string;
+  topic: string;
+  targetAudience: string;
+  primaryKeyword: string;
+  secondaryKeywords: string;
+  plannedGenerationDate: string;
+  plannedPublishDate: string;
+  generationCount: number;
+  status: OpsContentTaskStatus;
+  assignedUserId: string;
+  notes: string;
+  createdAt: string;
+  updatedAt: string;
+};
+
+export type OpsContentDraft = {
+  id: string;
+  contentTaskId: string;
+  clientId: string;
+  organizationId: string;
+  contentType: OpsContentType;
+  title: string;
+  summary: string;
+  body: string;
+  faq: string;
+  seoTitle: string;
+  seoDescription: string;
+  suggestedKeywords: string;
+  status: OpsContentDraftStatus;
+  internalNotes: string;
+  createdByUserId: string;
+  updatedByUserId: string;
+  createdAt: string;
+  updatedAt: string;
+};
+
+export type OpsContentVersion = {
+  id: string;
+  draftId: string;
+  versionNumber: number;
+  title: string;
+  body: string;
+  changeNote: string;
+  changedByUserId: string;
+  createdAt: string;
+};
+
+export type OpsContentGenerationRun = {
+  id: string;
+  contentTaskId: string;
+  draftId: string;
+  requestId: string;
+  scene: string;
+  promptVersion: string;
+  model: string;
+  status: "success" | "failed";
+  errorCode: string;
+  errorMessage: string;
+  elapsedMs: number | null;
+  tokenUsage: string;
+  createdAt: string;
+};
+
+export type OpsStyleSample = {
+  id: string;
+  organizationId: string;
+  title: string;
+  content: string;
+  contentType: OpsContentType;
+  active: boolean;
+  createdAt: string;
+  updatedAt: string;
+};
+
+export type OpsKeyword = {
+  id: string;
+  organizationId: string;
+  keyword: string;
+  keywordType: string;
+  source: "manual" | "ai_extended" | "history";
+  active: boolean;
+  usageCount: number;
+  lastUsedAt: string;
+  notes: string;
+  createdAt: string;
+  updatedAt: string;
+};
+
+export type OpsContentTaskInput = Omit<OpsContentTask, "id" | "createdAt" | "updatedAt" | "generationCount"> & { id?: string; generationCount?: number };
+export type OpsContentDraftInput = Omit<OpsContentDraft, "id" | "createdAt" | "updatedAt"> & { id?: string };
+export type OpsContentVersionInput = Omit<OpsContentVersion, "id" | "createdAt"> & { id?: string };
+export type OpsContentGenerationRunInput = Omit<OpsContentGenerationRun, "id" | "createdAt"> & { id?: string };
+export type OpsStyleSampleInput = Omit<OpsStyleSample, "id" | "createdAt" | "updatedAt"> & { id?: string };
+export type OpsKeywordInput = Omit<OpsKeyword, "id" | "createdAt" | "updatedAt"> & { id?: string };
+
 export type OpsDashboardMetrics = {
   activeClients: number;
   expectedThisMonth: number;

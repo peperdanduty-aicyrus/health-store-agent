@@ -39,6 +39,18 @@ export type GenerateStoreProfileSummaryInput = {
   storeProfile: StoreProfileForPrompt;
 };
 
+/** Fixed-provider escape hatch for the content center. The caller supplies a
+ * server-only prompt; no provider or model is exposed to the browser. */
+export async function generateFixedPromptContent(prompt: string): Promise<GenerateContentResult> {
+  const provider = readProviderFromEnv();
+  if (provider === "mock") {
+    return { content: JSON.stringify({ title: "待编辑内容", summary: "请根据机构真实资料补充。", body: "机构资料中未明确的事实不会被补充。", faq: [], seoTitle: "", seoDescription: "", suggestedKeywords: [] }), model: "mock-content-center", prompt, provider };
+  }
+  if (provider === "deepseek") return generateWithDeepSeek({ prompt });
+  if (provider === "qwen") return generateWithQwen({ prompt });
+  return generateWithQwen({ prompt, provider: "openai-compatible" });
+}
+
 export async function generateContent({
   input,
   provider = readProviderFromEnv(),

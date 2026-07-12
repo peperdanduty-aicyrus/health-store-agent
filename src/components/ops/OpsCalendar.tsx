@@ -1,12 +1,13 @@
 import Link from "next/link";
 import { EmptyState } from "./OpsUi";
-import type { OpsServiceAgreement, OpsSubscription, OpsTask } from "@/lib/ops/types";
+import type { OpsContentTask, OpsServiceAgreement, OpsSubscription, OpsTask } from "@/lib/ops/types";
 
 type CalendarEvent = { date: string; label: string; href: string; tone: string };
 
-export function OpsCalendar({ month, tasks, subscriptions = [], agreements = [], compact = false }: {
+export function OpsCalendar({ month, tasks, contentTasks = [], subscriptions = [], agreements = [], compact = false }: {
   month: string;
   tasks: OpsTask[];
+  contentTasks?: OpsContentTask[];
   subscriptions?: OpsSubscription[];
   agreements?: OpsServiceAgreement[];
   compact?: boolean;
@@ -20,6 +21,12 @@ export function OpsCalendar({ month, tasks, subscriptions = [], agreements = [],
       date: task.scheduledDate || task.dueDate,
       label: task.title,
       href: `/lvminglei/tasks/${task.id}`,
+      tone: task.status === "已发布" ? "published" : task.status === "已交付" ? "delivered" : "task",
+    })),
+    ...contentTasks.map((task) => ({
+      date: task.plannedGenerationDate || task.plannedPublishDate,
+      label: `内容 · ${task.topic || "未命名选题"}`,
+      href: `/lvminglei/content/drafts?taskId=${task.id}`,
       tone: task.status === "已发布" ? "published" : task.status === "已交付" ? "delivered" : "task",
     })),
     ...subscriptions.map((item) => ({ date: item.expiryDate, label: `${item.serviceName} 到期`, href: "/lvminglei/subscriptions", tone: "expiry" })),

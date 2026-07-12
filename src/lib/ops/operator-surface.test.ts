@@ -5,9 +5,11 @@ describe("operator surface data isolation", () => {
   it("does not request or render finance and contract data", () => {
     const page = fs.readFileSync("src/app/app/page.tsx", "utf8");
     const actions = fs.readFileSync("src/app/app/ops-actions.ts", "utf8");
+    const contentActions = fs.readFileSync("src/app/app/content-actions.ts", "utf8");
     for (const forbidden of ["listPayments", "listAgreements", "monthlyFee", "expectedAmount", "receivedAmount", "settlementDay", "renewalProbability", "monthly_fee", "expected_amount", "paid_amount"]) {
       expect(page).not.toContain(forbidden);
       expect(actions).not.toContain(forbidden);
+      expect(contentActions).not.toContain(forbidden);
     }
   });
 
@@ -33,5 +35,12 @@ describe("operator surface data isolation", () => {
     expect(page).toContain("organizationId");
     expect(generateAction).toContain("assertOrganizationAccess");
     expect(generateAction).toContain("profile.storeType === \"运营人员\"");
+  });
+
+  it("validates the assigned organization again for content task and draft mutations", () => {
+    const actions = fs.readFileSync("src/app/app/content-actions.ts", "utf8");
+    expect(actions.match(/assertOrganizationAccess/g)?.length).toBeGreaterThanOrEqual(1);
+    expect(actions).toContain("requireUser");
+    expect(actions).toContain("getContentDraft");
   });
 });

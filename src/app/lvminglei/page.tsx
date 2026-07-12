@@ -24,8 +24,9 @@ export default async function OpsDashboardPage() {
   const store = await getOpsStore();
   const month = currentChinaMonth();
   const range = monthRange(month);
-  const [clients, payments, tasks, subscriptions, agreements] = await Promise.all([
+  const [clients, payments, tasks, contentTasks, subscriptions, agreements] = await Promise.all([
     store.listClients(), store.listPayments(), store.listTasks({ periodStart: range.start, periodEnd: range.end }),
+    store.listContentTasks({ periodStart: range.start, periodEnd: range.end }),
     store.listSubscriptions(), store.listAgreements(),
   ]);
   const metrics = calculateOpsDashboardMetrics(clients, payments, tasks);
@@ -48,7 +49,7 @@ export default async function OpsDashboardPage() {
         ))}
       </section>
       <Panel title={`${month.slice(0, 4)}年${Number(month.slice(5))}月`} action={<a className="ops-text-link" href="/lvminglei/calendar">查看完整月历</a>}>
-        <OpsCalendar month={month} tasks={tasks} subscriptions={subscriptions} agreements={agreements} />
+        <OpsCalendar month={month} tasks={tasks} contentTasks={contentTasks} subscriptions={subscriptions} agreements={agreements} />
       </Panel>
       <section className="ops-dashboard-lists">
         <Panel title="今日待办" action={<Link className="ops-button ops-button-primary small" href="/lvminglei/tasks/new">新增任务</Link>}>

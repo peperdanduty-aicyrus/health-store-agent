@@ -4,6 +4,16 @@ import type {
   OpsClientInput,
   OpsContentProfile,
   OpsContentProfileInput,
+  OpsContentDraft,
+  OpsContentDraftInput,
+  OpsContentGenerationRun,
+  OpsContentGenerationRunInput,
+  OpsContentTask,
+  OpsContentTaskInput,
+  OpsContentVersion,
+  OpsContentVersionInput,
+  OpsKeyword,
+  OpsKeywordInput,
   OpsOperatorAssignment,
   OpsOperatorAssignmentInput,
   OpsOrganization,
@@ -20,8 +30,10 @@ import type {
   OpsTaskInput,
   OpsTaskLog,
   OpsTaskLogInput,
+  OpsStyleSample,
+  OpsStyleSampleInput,
 } from "./types";
-import type { OpsStore, OpsTaskFilter } from "./store";
+import type { OpsContentTaskFilter, OpsStore, OpsTaskFilter } from "./store";
 
 type BooleanRow<T> = Omit<T, "active"> & { active: number };
 type SubscriptionRow = Omit<OpsSubscription, "autoRenew"> & { autoRenew: number };
@@ -66,6 +78,21 @@ const contentProfileSelect = `SELECT id, organization_id organizationId, detaile
 const reportSelect = `SELECT id, client_id clientId, organization_id organizationId,
   report_type reportType, period_start periodStart, period_end periodEnd, content, status,
   created_at createdAt, updated_at updatedAt FROM ops_reports`;
+const contentTaskSelect = `SELECT id, client_id clientId, organization_id organizationId, content_type contentType,
+  title_direction titleDirection, topic, target_audience targetAudience, primary_keyword primaryKeyword,
+  secondary_keywords secondaryKeywords, planned_generation_date plannedGenerationDate,
+  planned_publish_date plannedPublishDate, generation_count generationCount, status,
+  assigned_user_id assignedUserId, notes, created_at createdAt, updated_at updatedAt FROM ops_content_tasks`;
+const contentDraftSelect = `SELECT id, content_task_id contentTaskId, client_id clientId, organization_id organizationId,
+  content_type contentType, title, summary, body, faq, seo_title seoTitle, seo_description seoDescription,
+  suggested_keywords suggestedKeywords, status, internal_notes internalNotes, created_by_user_id createdByUserId,
+  updated_by_user_id updatedByUserId, created_at createdAt, updated_at updatedAt FROM ops_content_drafts`;
+const contentVersionSelect = `SELECT id, draft_id draftId, version_number versionNumber, title, body,
+  change_note changeNote, changed_by_user_id changedByUserId, created_at createdAt FROM ops_content_versions`;
+const styleSampleSelect = `SELECT id, organization_id organizationId, title, content, content_type contentType,
+  active, created_at createdAt, updated_at updatedAt FROM ops_style_samples`;
+const keywordSelect = `SELECT id, organization_id organizationId, keyword, keyword_type keywordType, source,
+  active, usage_count usageCount, last_used_at lastUsedAt, notes, created_at createdAt, updated_at updatedAt FROM ops_keywords`;
 
 export function createD1OpsStore(db: D1DatabaseLike): OpsStore {
   return {
@@ -351,6 +378,56 @@ export function createD1OpsStore(db: D1DatabaseLike): OpsStore {
           record.periodEnd, record.content, record.status, record.createdAt, record.updatedAt).run();
       return record;
     },
+    async listContentTasks(filter: OpsContentTaskFilter = {}) {
+      const conditions: string[] = [];
+      const values: string[] = [];
+      if (filter.clientId) { conditions.push("client_id = ?"); values.push(filter.clientId); }
+      if (filter.organizationId) { conditions.push("organization_id = ?"); values.push(filter.organizationId); }
+      if (filter.assignedUserId) { conditions.push("assigned_user_id = ?"); values.push(filter.assignedUserId); }
+      if (filter.contentType) { conditions.push("content_type = ?"); values.push(filter.contentType); }
+      if (filter.status) { conditions.push("status = ?"); values.push(filter.status); }
+      if (filter.keyword) { conditions.push("(primary_keyword LIKE ? OR secondary_keywords LIKE ?)"); values.push(`%${filter.keyword}%`, `%${filter.keyword}%`); }
+      if (filter.periodStart) { conditions.push("planned_generation_date >= ?"); values.push(filter.periodStart); }
+      if (filter.periodEnd) { conditions.push("planned_generation_date <= ?"); values.push(filter.periodEnd); }
+      const where = conditions.length ? ` WHERE ${conditions.join(" AND ")}` : "";
+      const { results = [] } = await db.prepare(`${contentTaskSelect}${where} ORDER BY planned_generation_date, planned_publish_date, created_at DESC`).bind(...values).all<OpsContentTask>();
+      return results;
+    },
+    async getContentTask(id) { return db.prepare(`${contentTaskSelect} WHERE id = ?`).bind(id).first<OpsContentTask>(); },
+    async saveContentTask(input) {
+      const now = new Date().toISOString();
+      const existing = input.id ? await this.getContentTask(input.id) : null;
+      const record = withTimestamps<OpsContentTask>({ ...input, generationCount: input.generationCount ?? existing?.generationCount ?? 0 }, "ops_content_task", now, existing?.createdAt);
+      await db.prepare(`INSERT INTO ops_content_tasks (id, client_id, organization_id, content_type, title_direction, topic, target_audience, primary_keyword, secondary_keywords, planned_generation_date, planned_publish_date, generation_count, status, assigned_user_id, notes, created_at, updated_at)
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+        ON CONFLICT(id) DO UPDATE SET client_id=excluded.client_id, organization_id=excluded.organization_id, content_type=excluded.content_type, title_direction=excluded.title_direction, topic=excluded.topic, target_audience=excluded.target_audience, primary_keyword=excluded.primary_keyword, secondary_keywords=excluded.secondary_keywords, planned_generation_date=excluded.planned_generation_date, planned_publish_date=excluded.planned_publish_date, generation_count=excluded.generation_count, status=excluded.status, assigned_user_id=excluded.assigned_user_id, notes=excluded.notes, updated_at=excluded.updated_at`)
+        .bind(record.id, record.clientId, record.organizationId, record.contentType, record.titleDirection, record.topic, record.targetAudience, record.primaryKeyword, record.secondaryKeywords, record.plannedGenerationDate, record.plannedPublishDate, record.generationCount, record.status, record.assignedUserId, record.notes, record.createdAt, record.updatedAt).run();
+      return record;
+    },
+    async listContentDrafts(organizationId, contentTaskId) {
+      const conditions: string[] = []; const values: string[] = [];
+      if (organizationId) { conditions.push("organization_id = ?"); values.push(organizationId); }
+      if (contentTaskId) { conditions.push("content_task_id = ?"); values.push(contentTaskId); }
+      const where = conditions.length ? ` WHERE ${conditions.join(" AND ")}` : "";
+      const { results = [] } = await db.prepare(`${contentDraftSelect}${where} ORDER BY updated_at DESC`).bind(...values).all<OpsContentDraft>(); return results;
+    },
+    async getContentDraft(id) { return db.prepare(`${contentDraftSelect} WHERE id = ?`).bind(id).first<OpsContentDraft>(); },
+    async saveContentDraft(input) {
+      const now = new Date().toISOString(); const existing = input.id ? await this.getContentDraft(input.id) : null;
+      const record = withTimestamps<OpsContentDraft>(input, "ops_content_draft", now, existing?.createdAt);
+      await db.prepare(`INSERT INTO ops_content_drafts (id, content_task_id, client_id, organization_id, content_type, title, summary, body, faq, seo_title, seo_description, suggested_keywords, status, internal_notes, created_by_user_id, updated_by_user_id, created_at, updated_at)
+       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+       ON CONFLICT(id) DO UPDATE SET content_task_id=excluded.content_task_id, client_id=excluded.client_id, organization_id=excluded.organization_id, content_type=excluded.content_type, title=excluded.title, summary=excluded.summary, body=excluded.body, faq=excluded.faq, seo_title=excluded.seo_title, seo_description=excluded.seo_description, suggested_keywords=excluded.suggested_keywords, status=excluded.status, internal_notes=excluded.internal_notes, updated_by_user_id=excluded.updated_by_user_id, updated_at=excluded.updated_at`)
+       .bind(record.id, record.contentTaskId, record.clientId, record.organizationId, record.contentType, record.title, record.summary, record.body, record.faq, record.seoTitle, record.seoDescription, record.suggestedKeywords, record.status, record.internalNotes, record.createdByUserId, record.updatedByUserId, record.createdAt, record.updatedAt).run(); return record;
+    },
+    async listContentVersions(draftId) { const { results = [] } = await db.prepare(`${contentVersionSelect} WHERE draft_id = ? ORDER BY version_number DESC`).bind(draftId).all<OpsContentVersion>(); return results; },
+    async saveContentVersion(input) { const record: OpsContentVersion = { ...input, id: input.id || makeId("ops_content_version"), createdAt: new Date().toISOString() }; await db.prepare("INSERT INTO ops_content_versions (id, draft_id, version_number, title, body, change_note, changed_by_user_id, created_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?)").bind(record.id, record.draftId, record.versionNumber, record.title, record.body, record.changeNote, record.changedByUserId, record.createdAt).run(); return record; },
+    async saveContentGenerationRun(input) { const record: OpsContentGenerationRun = { ...input, id: input.id || makeId("ops_content_run"), createdAt: new Date().toISOString() }; await db.prepare("INSERT INTO ops_content_generation_runs (id, content_task_id, draft_id, request_id, scene, prompt_version, model, status, error_code, error_message, elapsed_ms, token_usage, created_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)").bind(record.id, record.contentTaskId, record.draftId, record.requestId, record.scene, record.promptVersion, record.model, record.status, record.errorCode, record.errorMessage, record.elapsedMs, record.tokenUsage, record.createdAt).run(); return record; },
+    async listStyleSamples(organizationId) { const { results = [] } = await db.prepare(`${styleSampleSelect} WHERE organization_id = ? ORDER BY updated_at DESC`).bind(organizationId).all<BooleanRow<OpsStyleSample>>(); return results.map(mapActive); },
+    async saveStyleSample(input) { const now = new Date().toISOString(); const record = withTimestamps<OpsStyleSample>(input, "ops_style_sample", now); await db.prepare("INSERT INTO ops_style_samples (id, organization_id, title, content, content_type, active, created_at, updated_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?) ON CONFLICT(id) DO UPDATE SET organization_id=excluded.organization_id, title=excluded.title, content=excluded.content, content_type=excluded.content_type, active=excluded.active, updated_at=excluded.updated_at").bind(record.id, record.organizationId, record.title, record.content, record.contentType, record.active ? 1 : 0, record.createdAt, record.updatedAt).run(); return record; },
+    async listKeywords(organizationId) { const { results = [] } = await db.prepare(`${keywordSelect} WHERE organization_id = ? ORDER BY updated_at DESC`).bind(organizationId).all<BooleanRow<OpsKeyword>>(); return results.map(mapActive); },
+    async saveKeyword(input) { const now = new Date().toISOString(); const existing = input.id ? null : await db.prepare("SELECT id, created_at createdAt FROM ops_keywords WHERE organization_id = ? AND keyword = ?").bind(input.organizationId, input.keyword).first<{id:string;createdAt:string}>(); const record = withTimestamps<OpsKeyword>({ ...input, id: input.id || existing?.id }, "ops_keyword", now, existing?.createdAt); await db.prepare("INSERT INTO ops_keywords (id, organization_id, keyword, keyword_type, source, active, usage_count, last_used_at, notes, created_at, updated_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?) ON CONFLICT(id) DO UPDATE SET keyword=excluded.keyword, keyword_type=excluded.keyword_type, source=excluded.source, active=excluded.active, usage_count=excluded.usage_count, last_used_at=excluded.last_used_at, notes=excluded.notes, updated_at=excluded.updated_at").bind(record.id, record.organizationId, record.keyword, record.keywordType, record.source, record.active ? 1 : 0, record.usageCount, record.lastUsedAt, record.notes, record.createdAt, record.updatedAt).run(); return record; },
+    async markKeywordUsed(id) { await db.prepare("UPDATE ops_keywords SET usage_count = usage_count + 1, last_used_at = ?, updated_at = ? WHERE id = ?").bind(new Date().toISOString(), new Date().toISOString(), id).run(); const row = await db.prepare(`${keywordSelect} WHERE id = ?`).bind(id).first<BooleanRow<OpsKeyword>>(); return row ? mapActive(row) : null; },
   };
 }
 

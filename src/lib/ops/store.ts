@@ -3,6 +3,16 @@ import type {
   OpsClientInput,
   OpsContentProfile,
   OpsContentProfileInput,
+  OpsContentDraft,
+  OpsContentDraftInput,
+  OpsContentGenerationRun,
+  OpsContentGenerationRunInput,
+  OpsContentTask,
+  OpsContentTaskInput,
+  OpsContentVersion,
+  OpsContentVersionInput,
+  OpsKeyword,
+  OpsKeywordInput,
   OpsOperatorAssignment,
   OpsOperatorAssignmentInput,
   OpsOrganization,
@@ -19,12 +29,25 @@ import type {
   OpsTaskInput,
   OpsTaskLog,
   OpsTaskLogInput,
+  OpsStyleSample,
+  OpsStyleSampleInput,
 } from "./types";
 
 export type OpsTaskFilter = {
   clientId?: string;
   organizationId?: string;
   assignedUserId?: string;
+  periodStart?: string;
+  periodEnd?: string;
+};
+
+export type OpsContentTaskFilter = {
+  clientId?: string;
+  organizationId?: string;
+  assignedUserId?: string;
+  contentType?: string;
+  status?: string;
+  keyword?: string;
   periodStart?: string;
   periodEnd?: string;
 };
@@ -59,6 +82,20 @@ export type OpsStore = {
   listReports(clientId?: string): Promise<OpsReport[]>;
   getReport(id: string): Promise<OpsReport | null>;
   saveReport(input: OpsReportInput): Promise<OpsReport>;
+  listContentTasks(filter?: OpsContentTaskFilter): Promise<OpsContentTask[]>;
+  getContentTask(id: string): Promise<OpsContentTask | null>;
+  saveContentTask(input: OpsContentTaskInput): Promise<OpsContentTask>;
+  listContentDrafts(organizationId?: string, contentTaskId?: string): Promise<OpsContentDraft[]>;
+  getContentDraft(id: string): Promise<OpsContentDraft | null>;
+  saveContentDraft(input: OpsContentDraftInput): Promise<OpsContentDraft>;
+  listContentVersions(draftId: string): Promise<OpsContentVersion[]>;
+  saveContentVersion(input: OpsContentVersionInput): Promise<OpsContentVersion>;
+  saveContentGenerationRun(input: OpsContentGenerationRunInput): Promise<OpsContentGenerationRun>;
+  listStyleSamples(organizationId: string): Promise<OpsStyleSample[]>;
+  saveStyleSample(input: OpsStyleSampleInput): Promise<OpsStyleSample>;
+  listKeywords(organizationId: string): Promise<OpsKeyword[]>;
+  saveKeyword(input: OpsKeywordInput): Promise<OpsKeyword>;
+  markKeywordUsed(id: string): Promise<OpsKeyword | null>;
 };
 
 type OpsState = {
@@ -72,6 +109,12 @@ type OpsState = {
   assignments: OpsOperatorAssignment[];
   contentProfiles: OpsContentProfile[];
   reports: OpsReport[];
+  contentTasks: OpsContentTask[];
+  contentDrafts: OpsContentDraft[];
+  contentVersions: OpsContentVersion[];
+  contentGenerationRuns: OpsContentGenerationRun[];
+  styleSamples: OpsStyleSample[];
+  keywords: OpsKeyword[];
 };
 
 export function createMemoryOpsStore(initial: Partial<OpsState> = {}): OpsStore {
@@ -86,6 +129,12 @@ export function createMemoryOpsStore(initial: Partial<OpsState> = {}): OpsStore 
     assignments: clone(initial.assignments ?? []),
     contentProfiles: clone(initial.contentProfiles ?? []),
     reports: clone(initial.reports ?? []),
+    contentTasks: clone(initial.contentTasks ?? []),
+    contentDrafts: clone(initial.contentDrafts ?? []),
+    contentVersions: clone(initial.contentVersions ?? []),
+    contentGenerationRuns: clone(initial.contentGenerationRuns ?? []),
+    styleSamples: clone(initial.styleSamples ?? []),
+    keywords: clone(initial.keywords ?? []),
   };
 
   return {
@@ -149,6 +198,31 @@ export function createMemoryOpsStore(initial: Partial<OpsState> = {}): OpsStore 
     },
     async getReport(id) { return state.reports.find((item) => item.id === id) ?? null; },
     async saveReport(input) { return upsert(state.reports, input, "ops_report"); },
+    async listContentTasks(filter = {}) { return state.contentTasks.filter((item) => matchesContentTask(item, filter)).sort(byContentSchedule); },
+    async getContentTask(id) { return state.contentTasks.find((item) => item.id === id) ?? null; },
+    async saveContentTask(input) { return upsert(state.contentTasks, { ...input, generationCount: input.generationCount ?? 0 }, "ops_content_task"); },
+    async listContentDrafts(organizationId, contentTaskId) {
+      return state.contentDrafts.filter((item) => (!organizationId || item.organizationId === organizationId) && (!contentTaskId || item.contentTaskId === contentTaskId)).sort(byUpdated);
+    },
+    async getContentDraft(id) { return state.contentDrafts.find((item) => item.id === id) ?? null; },
+    async saveContentDraft(input) { return upsert(state.contentDrafts, input, "ops_content_draft"); },
+    async listContentVersions(draftId) { return state.contentVersions.filter((item) => item.draftId === draftId).sort((a, b) => b.versionNumber - a.versionNumber); },
+    async saveContentVersion(input) {
+      const record: OpsContentVersion = { ...input, id: input.id || makeId("ops_content_version"), createdAt: new Date().toISOString() };
+      state.contentVersions.unshift(record); return record;
+    },
+    async saveContentGenerationRun(input) {
+      const record: OpsContentGenerationRun = { ...input, id: input.id || makeId("ops_content_run"), createdAt: new Date().toISOString() };
+      state.contentGenerationRuns.unshift(record); return record;
+    },
+    async listStyleSamples(organizationId) { return state.styleSamples.filter((item) => item.organizationId === organizationId).sort(byUpdated); },
+    async saveStyleSample(input) { return upsert(state.styleSamples, input, "ops_style_sample"); },
+    async listKeywords(organizationId) { return state.keywords.filter((item) => item.organizationId === organizationId).sort(byUpdated); },
+    async saveKeyword(input) { return upsert(state.keywords, input, "ops_keyword"); },
+    async markKeywordUsed(id) {
+      const item = state.keywords.find((keyword) => keyword.id === id); if (!item) return null;
+      item.usageCount += 1; item.lastUsedAt = new Date().toISOString(); item.updatedAt = item.lastUsedAt; return item;
+    },
   };
 }
 
@@ -205,8 +279,21 @@ function matchesTask(task: OpsTask, filter: OpsTaskFilter) {
   return true;
 }
 
+function matchesContentTask(task: OpsContentTask, filter: OpsContentTaskFilter) {
+  if (filter.clientId && task.clientId !== filter.clientId) return false;
+  if (filter.organizationId && task.organizationId !== filter.organizationId) return false;
+  if (filter.assignedUserId && task.assignedUserId !== filter.assignedUserId) return false;
+  if (filter.contentType && task.contentType !== filter.contentType) return false;
+  if (filter.status && task.status !== filter.status) return false;
+  if (filter.keyword && !`${task.primaryKeyword} ${task.secondaryKeywords}`.includes(filter.keyword)) return false;
+  if (filter.periodStart && task.plannedGenerationDate && task.plannedGenerationDate < filter.periodStart) return false;
+  if (filter.periodEnd && task.plannedGenerationDate && task.plannedGenerationDate > filter.periodEnd) return false;
+  return true;
+}
+
 function byUpdated(a: { updatedAt: string }, b: { updatedAt: string }) { return b.updatedAt.localeCompare(a.updatedAt); }
 function bySchedule(a: OpsTask, b: OpsTask) { return (a.scheduledDate || a.dueDate).localeCompare(b.scheduledDate || b.dueDate); }
+function byContentSchedule(a: OpsContentTask, b: OpsContentTask) { return (a.plannedGenerationDate || a.plannedPublishDate || a.createdAt).localeCompare(b.plannedGenerationDate || b.plannedPublishDate || b.createdAt); }
 function makeId(prefix: string) { return `${prefix}_${crypto.randomUUID().replace(/-/g, "").slice(0, 12)}`; }
 function clone<T>(value: T): T { return JSON.parse(JSON.stringify(value)) as T; }
 

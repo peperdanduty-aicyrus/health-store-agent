@@ -1,57 +1,15 @@
-import Link from "next/link";
 import { logout } from "@/app/actions";
+import { CopyButton } from "@/components/ops/CopyButton";
 import { EmptyState, Panel } from "@/components/ops/OpsUi";
 import { requireUser } from "@/lib/auth/session";
-import { formatChinaDateTime } from "@/lib/date-format";
-import { getDataStore } from "@/lib/data/repository";
-import { sceneDefinitions, type SceneKey } from "@/lib/domain/scenes";
+import { contentLabels, copyableContent } from "@/lib/content/production";
 import { getOpsStore } from "@/lib/ops/repository";
-
-const contentTypes: Array<{ label: string; scene: SceneKey; description: string }> = [
-  { label: "公众号文章", scene: "official_account", description: "项目介绍、活动通知与门店动态。" },
-  { label: "朋友圈内容", scene: "moments", description: "适合日常发布的短文案与配图建议。" },
-  { label: "小红书内容", scene: "xiaohongshu", description: "标题、正文与评论区引导。" },
-  { label: "短视频文案", scene: "douyin_kuaishou", description: "标题、口播、字幕与评论引导。" },
-  { label: "AI 搜索文章", scene: "official_account", description: "基于真实机构资料整理可检索文章。" },
-];
+import { opsContentTypes } from "@/lib/ops/types";
+import { createOperatorContent, saveOperatorContentDraft } from "./content-actions";
 
 export default async function OperatorAppPage({ searchParams }: { searchParams: Promise<{ organizationId?: string }> }) {
-  const profile = await requireUser();
-  const requestedOrganizationId = (await searchParams).organizationId || "";
-  const [opsStore, dataStore] = await Promise.all([getOpsStore(), getDataStore()]);
-  const [assignments, organizations, generations] = await Promise.all([
-    opsStore.listAssignments(profile.id),
-    opsStore.listOrganizations(),
-    dataStore.listGenerations({ userId: profile.id }),
-  ]);
-  const allowedOrganizationIds = new Set(assignments.map((item) => item.organizationId));
-  const assignedOrganizations = organizations.filter((item) => item.active && allowedOrganizationIds.has(item.id));
-  const selectedOrganization = assignedOrganizations.find((item) => item.id === requestedOrganizationId) || assignedOrganizations[0];
-  const latestGenerations = generations.slice(0, 4);
-
-  return (
-    <main className="operator-shell">
-      <header className="operator-topbar"><div><p>门店线上运营与 AI 搜索优化</p><h1>内容生成工作台</h1></div><div><span>{profile.storeName || profile.phone}</span><form action={logout}><button className="ops-button ops-button-secondary" type="submit">退出登录</button></form></div></header>
-      <div className="operator-content operator-workbench">
-        <section className="operator-welcome"><div><p>运营内容工作台</p><h2>为被分配机构准备内容</h2><span>机构范围由服务端校验；此处不提供合同、费用、收款或客户续费信息。</span></div></section>
-        {assignedOrganizations.length === 0 ? <EmptyState title="暂未分配机构" description="请联系管理员在系统管理中为当前账号分配机构。" /> : (
-          <>
-            <form className="operator-org-picker" action="/app" method="get"><span>当前被分配机构</span><select defaultValue={selectedOrganization?.id} name="organizationId">{assignedOrganizations.map((organization) => <option key={organization.id} value={organization.id}>{organization.organizationName}</option>)}</select><button className="ops-button ops-button-secondary" type="submit">切换机构</button></form>
-            <section className="operator-content-grid">
-              <Panel title={selectedOrganization ? `${selectedOrganization.organizationName} · 内容生成` : "内容生成"}>
-                <div className="operator-content-types">{contentTypes.map((item) => <Link className="operator-content-type" href={`/app/generate/${item.scene}?organizationId=${selectedOrganization?.id || ""}`} key={item.label}><strong>{item.label}</strong><span>{item.description}</span></Link>)}</div>
-              </Panel>
-              <div className="ops-stack">
-                <Panel title="最近生成" action={<Link className="ops-text-link" href="/app/history">全部历史</Link>}>
-                  {latestGenerations.length ? latestGenerations.map((record) => <div className="operator-generation-row" key={record.id}><strong>{record.projectName || sceneDefinitions[record.generationType].label}</strong><span>{sceneDefinitions[record.generationType].label} · {formatChinaDateTime(record.createdAt)}</span></div>) : <EmptyState compact title="暂无生成记录" description="从左侧内容类型开始生成" />}
-                </Panel>
-                <Panel title="草稿"><EmptyState compact title="暂无草稿" description="当前版本尚未启用草稿保存，已生成内容可在历史记录查看。" /></Panel>
-                <Panel title="历史记录"><Link className="ops-button ops-button-secondary" href="/app/history">查看生成历史</Link></Panel>
-              </div>
-            </section>
-          </>
-        )}
-      </div>
-    </main>
-  );
+  const profile = await requireUser(); const requestedOrganizationId = (await searchParams).organizationId || ""; const store = await getOpsStore();
+  const [assignments, organizations] = await Promise.all([store.listAssignments(profile.id), store.listOrganizations()]); const allowed = new Set(assignments.map((item) => item.organizationId)); const assigned = organizations.filter((item) => item.active && allowed.has(item.id)); const selected = assigned.find((item) => item.id === requestedOrganizationId) || assigned[0];
+  const [drafts, tasks] = selected ? await Promise.all([store.listContentDrafts(selected.id), store.listContentTasks({ organizationId: selected.id, assignedUserId: profile.id })]) : [[], []];
+  return <main className="operator-shell"><header className="operator-topbar"><div><p>门店线上运营与 AI 搜索优化</p><h1>内容生成工作台</h1></div><div><span>{profile.storeName || profile.phone}</span><form action={logout}><button className="ops-button ops-button-secondary">退出登录</button></form></div></header><div className="operator-content operator-workbench"><section className="operator-welcome"><div><p>运营内容工作台</p><h2>为被分配机构准备内容</h2><span>机构范围由服务端校验；这里不提供财务、合同、收款、续费或其他客户信息。</span></div></section>{!assigned.length ? <EmptyState title="暂未分配机构" description="请联系管理员分配机构。" /> : <><form className="operator-org-picker" action="/app"><span>当前被分配机构</span><select name="organizationId" defaultValue={selected?.id}>{assigned.map((item) => <option key={item.id} value={item.id}>{item.organizationName}</option>)}</select><button className="ops-button ops-button-secondary">切换机构</button></form><section className="operator-content-grid"><Panel title="生成内容"><form action={createOperatorContent} className="ops-form-grid"><input name="organizationId" type="hidden" value={selected?.id} /><label className="ops-field"><span>内容类型</span><select name="contentType">{opsContentTypes.map((type) => <option key={type} value={type}>{contentLabels[type]}</option>)}</select></label><label className="ops-field"><span>主关键词</span><input name="primaryKeyword" /></label><label className="ops-field wide"><span>选题</span><input name="topic" placeholder="只从机构真实资料出发" required /></label><label className="ops-field wide"><span>标题方向 / 目标人群</span><input name="titleDirection" /><input name="targetAudience" /></label><button className="ops-button ops-button-primary">生成并保存草稿</button></form></Panel><Panel title="最近生成">{tasks.length ? <div className="ops-list">{tasks.slice(0, 5).map((task) => <div className="ops-list-row" key={task.id}><span><strong>{task.topic}</strong><small>{contentLabels[task.contentType]}</small></span><small>{task.status}</small></div>)}</div> : <EmptyState compact title="暂无生成记录" description="选择一种内容类型开始生成。" />}</Panel></section><section className="content-draft-list"><Panel title="草稿"><div className="ops-stack">{drafts.length ? drafts.slice(0, 8).map((draft) => <details className="operator-draft" key={draft.id}><summary><strong>{draft.title}</strong><span>{contentLabels[draft.contentType]}</span></summary><form action={saveOperatorContentDraft} className="ops-form-grid"><input name="id" type="hidden" value={draft.id} /><label className="ops-field wide"><span>标题</span><input name="title" defaultValue={draft.title} /></label><label className="ops-field wide"><span>摘要</span><textarea name="summary" defaultValue={draft.summary} /></label><label className="ops-field wide"><span>正文</span><textarea className="content-body-input" name="body" defaultValue={draft.body} /></label><label className="ops-field wide"><span>FAQ</span><textarea name="faq" defaultValue={draft.faq} /></label><div className="content-action-row"><button className="ops-button ops-button-primary">保存草稿</button><CopyButton value={copyableContent(draft, "plain")} /><CopyButton label="复制公众号格式" value={copyableContent(draft, "official")} /></div></form></details>) : <EmptyState compact title="暂无草稿" description="生成后会保存在当前机构的草稿中。" />}</div></Panel><Panel title="历史记录"><p className="content-muted">当前机构的最近内容会保留在草稿列表中；不会展示其他机构的数据。</p></Panel></section></>}</div></main>;
 }

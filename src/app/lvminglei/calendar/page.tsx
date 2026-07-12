@@ -12,8 +12,10 @@ export default async function CalendarPage({ searchParams }: { searchParams: Pro
   const month = /^\d{4}-\d{2}$/.test(requested || "") ? requested! : currentChinaMonth();
   const range = monthRange(month);
   const store = await getOpsStore();
-  const [tasks, subscriptions, agreements] = await Promise.all([
-    store.listTasks({ periodStart: range.start, periodEnd: range.end }), store.listSubscriptions(), store.listAgreements(),
+  const [tasks, contentTasks, subscriptions, agreements] = await Promise.all([
+    store.listTasks({ periodStart: range.start, periodEnd: range.end }),
+    store.listContentTasks({ periodStart: range.start, periodEnd: range.end }),
+    store.listSubscriptions(), store.listAgreements(),
   ]);
   const [year, monthNumber] = month.split("-").map(Number);
   const previous = monthValue(year, monthNumber - 1);
@@ -22,7 +24,7 @@ export default async function CalendarPage({ searchParams }: { searchParams: Pro
     <>
       <PageHeader title="月历" description="统一查看任务、交付、发布、结算、合同与软件会员到期。" actionHref="/lvminglei/tasks/new" actionLabel="新增任务" />
       <Panel title={`${year}年${monthNumber}月`} action={<div className="ops-month-switch"><Link href={`/lvminglei/calendar?month=${previous}`} aria-label="上个月"><ChevronLeft size={18} /></Link><Link href={`/lvminglei/calendar?month=${next}`} aria-label="下个月"><ChevronRight size={18} /></Link></div>}>
-        <OpsCalendar month={month} tasks={tasks} subscriptions={subscriptions} agreements={agreements} />
+        <OpsCalendar month={month} tasks={tasks} contentTasks={contentTasks} subscriptions={subscriptions} agreements={agreements} />
       </Panel>
     </>
   );
