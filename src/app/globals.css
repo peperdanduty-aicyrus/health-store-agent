@@ -228,6 +228,8 @@ input, select, textarea { color: var(--ops-text); }
 .content-version-row, .content-action-row { display: flex; align-items: center; justify-content: space-between; gap: 10px; padding: 10px 0; border-bottom: 1px solid var(--ops-border); font-size: 12px; }
 .content-version-row:last-child { border-bottom: 0; }
 .content-draft-list { display: grid; gap: 20px; }
+.content-compact-list { display: flex; flex-wrap: wrap; gap: 7px; margin-top: 14px; }
+.content-compact-list span { padding: 5px 8px; border-radius: 999px; color: var(--ops-primary); background: var(--ops-bg); font-size: 11px; }
 .operator-draft { overflow: hidden; border: 1px solid var(--ops-border); border-radius: 13px; background: #fff; }
 .operator-draft summary { display: flex; justify-content: space-between; gap: 12px; padding: 14px; cursor: pointer; list-style: none; }
 .operator-draft summary span { color: var(--ops-muted); font-size: 11px; }

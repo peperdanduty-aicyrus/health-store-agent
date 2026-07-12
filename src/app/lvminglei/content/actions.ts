@@ -59,6 +59,28 @@ export async function restoreContentVersion(formData: FormData) {
   await store.saveContentDraft({ ...draft, title: version.title, body: version.body, updatedByUserId: account.id }); refresh();
 }
 
+export async function saveStyleSample(formData: FormData) {
+  await requireWorkbenchOwner();
+  const store = await getOpsStore();
+  const organizationId = text(formData, "organizationId");
+  if (!await store.getOrganization(organizationId)) throw new Error("机构不存在。");
+  const contentType = text(formData, "contentType") as OpsContentType;
+  if (!opsContentTypes.includes(contentType)) throw new Error("内容类型无效。");
+  await store.saveStyleSample({ organizationId, title: text(formData, "title"), content: text(formData, "content"), contentType, active: true });
+  refresh();
+}
+
+export async function saveContentKeyword(formData: FormData) {
+  await requireWorkbenchOwner();
+  const store = await getOpsStore();
+  const organizationId = text(formData, "organizationId");
+  if (!await store.getOrganization(organizationId)) throw new Error("机构不存在。");
+  const keyword = text(formData, "keyword");
+  if (!keyword) throw new Error("关键词不能为空。");
+  await store.saveKeyword({ organizationId, keyword, keywordType: text(formData, "keywordType") || "核心词", source: "manual", active: true, usageCount: 0, lastUsedAt: "", notes: text(formData, "notes") });
+  refresh();
+}
+
 async function generateTask(taskId: string, actorId: string) {
   const store = await getOpsStore(); const task = await store.getContentTask(taskId);
   if (!task || task.status === "生成中" || task.status === "已作废") return;
